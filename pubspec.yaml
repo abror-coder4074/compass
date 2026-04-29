@@ -59,6 +59,7 @@ flutter:
     - assets/images/certiport_logo.png
     - assets/images/ic3_logo.png
     - assets/images/exam_landing_photo.png
+    - assets/images/pathways_progress.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

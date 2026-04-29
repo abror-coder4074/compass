@@ -34,7 +34,7 @@
   - Ranglar, typography, buttons, inputs, select/dropdown, switch, radio, table, scroll area va modal komponentlari screenshotlarga yaqinlashtiriladi.
   - App Windows 10 va Windows 11 da normal ko'rinadigan responsive desktop layoutga ega bo'lishi kerak.
 
-- [ ] 03. Login va Certiport portal flow
+- [x] 03. Login va Certiport portal flow
   - Reference rasmlar: `ic3-start-finish-guide-01.png` dan `ic3-start-finish-guide-12.png` gacha.
   - Login ekrani, language dropdown, username/password inputlari, Login tugmasi va pastki Certiport footer quriladi.
   - Login va pre-exam portal ekranlarida footer `Close Window` linki ko'rinadi va exam boshlanmagan holatda chiqish/log out simulyatsiyasi ishlaydi.
@@ -44,7 +44,7 @@
   - NDA/Terms sahifasi quriladi: long agreement panel, Yes/No radio, Previous/Next.
   - Buttonlar va inputlar haqiqiy ishlaydigan presentation state bilan ulanadi.
 
-- [ ] 04. Verify/unlock va system-check flow
+- [x] 04. Verify/unlock va system-check flow
   - Reference rasmlar: `ic3-start-finish-guide-13.png` dan `ic3-start-finish-guide-18.png` gacha.
   - Verify & Unlock Exam sahifasi quriladi: candidate/exam info table, proctor authentication form, warning row.
   - Proctor username/password inputlari ishlaydi; Continue/Next flow unlock holatiga olib o'tadi.
@@ -53,7 +53,7 @@
   - Pre-exam landing quriladi: IC3 logo, chap ko'k panel, exam name, time/questions/pass score, o'ngdagi katta foto/background, Tools dropdown va Start Exam tugmasi.
   - Bosqich tugagach `Start Exam` keyingi exam engine flowga o'tishi va appni fullscreen/kiosk-like `examLockdownMode` holatiga o'tkazishi kerak.
 
-- [ ] 05. Test engine flow
+- [x] 05. Test engine flow
   - Reference rasmlar: `ic3-start-finish-guide-19.png` dan `ic3-start-finish-guide-28.png` gacha.
   - Survey sahifasi quriladi: 3 ta rangli answer section va selectable answer cards.
   - Tutorial sahifasi quriladi: scrollable content, IC3 heading strip, Start Exam tugmasi.
@@ -64,7 +64,7 @@
   - Exam boshlangandan keyingi lockdown simulyatsiyasi ishlaydi: fullscreen/kiosk-like ko'rinish, `Close Window`, window close, minimize/resize yoki logout urinishlari exam tugamaguncha informational modal bilan to'xtatiladi.
   - Timer presentation state bilan ishlaydi yoki demo uchun tezlashtirilgan trigger bilan ko'rsatiladi.
 
-- [ ] 06. Feedback va score report flow
+- [x] 06. Feedback va score report flow
   - Reference rasmlar: `ic3-start-finish-guide-29.png`, `ic3-start-finish-guide-30.png`, `ic3-start-finish-guide-31.png`, `ic3-start-finish-guide-32.png`, va `ic3-start-finish-guide-04.png`.
   - Feedback intro sahifasi quriladi: Skip Feedback va Start Feedback tugmalari.
   - Feedback textarea sahifasi quriladi: prompt matni, katta text area, Next.
@@ -74,7 +74,7 @@
   - Score summary/full reportdan keyin appdan chiqish mumkin bo'lgan yakuniy holat ko'rsatiladi.
   - Score va email/nom data mock bo'ladi, blur qilinmaydi.
 
-- [ ] 07. Final polish va acceptance
+- [x] 07. Final polish va acceptance
   - Barcha bosqichlar yakunida full flow tekshiriladi: login -> address/cookie -> voucher -> exam select -> NDA -> verify -> checks -> start exam -> survey/tutorial -> questions -> summary -> timeout/finish -> feedback -> score.
   - `flutter analyze` xatosiz o'tishi kerak.
   - Windows run tekshiruvi: `flutter run -d windows`.

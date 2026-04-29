@@ -4,6 +4,7 @@ abstract final class CompassAssets {
   static const certiportLogo = 'assets/images/certiport_logo.png';
   static const ic3Logo = 'assets/images/ic3_logo.png';
   static const examLandingPhoto = 'assets/images/exam_landing_photo.png';
+  static const pathwaysProgress = 'assets/images/pathways_progress.png';
 }
 
 abstract final class CompassColors {

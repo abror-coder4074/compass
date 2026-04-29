@@ -23,6 +23,8 @@ Assetlar: Certiport/IC3 logotiplari va exam landingdagi katta foto/background 1:
 
 State boshqaruvi: cubit/bloc yo'q. Oddiy `StatefulWidget`, controller, local model class yoki `ValueNotifier` yetarli. Data app ichida hardcoded mock bo'lishi mumkin.
 
+Kod tashkiloti: katta screen/flowlarni bitta faylga yig'mang. `main.dart` faqat app bootstrap, window policy va yuqori darajadagi navigation wiring uchun qolishi kerak. Ekranlarni flow yoki feature bo'yicha alohida fayllarga ajrating; umumiy component/helperlarni `lib/ui/` ostida shared fayllarda saqlang. Bir fayl taxminan 400-500 qatordan oshib ketayotgan bo'lsa, uni mantiqiy kichik fayllarga bo'ling.
+
 Har bosqich oxirida tegishli checkbox `todo.md` ichida `[x]` qilinadi va imkon bo'lsa `flutter analyze` ishlatiladi.
 ```
 
