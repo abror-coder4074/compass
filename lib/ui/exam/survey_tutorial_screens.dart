@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/compass_models.dart';
 import '../compass_theme.dart';
 import 'exam_mock_data.dart';
 import 'exam_models.dart';
@@ -12,6 +13,7 @@ class ExamSurveyScreen extends StatelessWidget {
     required this.onCourseSelected,
     required this.onResourceToggled,
     required this.onUsageToggled,
+    this.sections = const [],
     super.key,
   });
 
@@ -21,6 +23,7 @@ class ExamSurveyScreen extends StatelessWidget {
   final ValueChanged<int> onCourseSelected;
   final ValueChanged<int> onResourceToggled;
   final ValueChanged<int> onUsageToggled;
+  final List<SurveySectionData> sections;
 
   @override
   Widget build(BuildContext context) {
@@ -69,34 +72,7 @@ class ExamSurveyScreen extends StatelessWidget {
                 widthFactor: 0.80,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _SurveySectionPanel(
-                      color: CompassColors.examNavy,
-                      title:
-                          'Select the statement that best describes the courses you have taken that cover Digital Literacy.',
-                      options: surveyCourseOptions,
-                      selectedIds: selectedCourseOptionId == null
-                          ? const <int>{}
-                          : {selectedCourseOptionId!},
-                      onOptionPressed: onCourseSelected,
-                    ),
-                    _SurveySectionPanel(
-                      color: const Color(0xFF008D3D),
-                      title:
-                          'Select all types of resources you used to prepare for the exam.',
-                      options: surveyResourceOptions,
-                      selectedIds: selectedResourceOptionIds,
-                      onOptionPressed: onResourceToggled,
-                    ),
-                    _SurveySectionPanel(
-                      color: const Color(0xFF1CB3AD),
-                      title:
-                          'Select all statements that describe how you use your Digital Literacy skills.',
-                      options: surveyUsageOptions,
-                      selectedIds: selectedUsageOptionIds,
-                      onOptionPressed: onUsageToggled,
-                    ),
-                  ],
+                  children: _buildSections(),
                 ),
               ),
             ),
@@ -104,6 +80,78 @@ class ExamSurveyScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildSections() {
+    if (sections.length >= 3) {
+      return [
+        _SurveySectionPanel(
+          color: _sectionColor(sections[0].theme, 0),
+          title: sections[0].description,
+          options: sections[0].options,
+          selectedIds: selectedCourseOptionId == null
+              ? const <int>{}
+              : {selectedCourseOptionId!},
+          onOptionPressed: onCourseSelected,
+        ),
+        _SurveySectionPanel(
+          color: _sectionColor(sections[1].theme, 1),
+          title: sections[1].description,
+          options: sections[1].options,
+          selectedIds: selectedResourceOptionIds,
+          onOptionPressed: onResourceToggled,
+        ),
+        _SurveySectionPanel(
+          color: _sectionColor(sections[2].theme, 2),
+          title: sections[2].description,
+          options: sections[2].options,
+          selectedIds: selectedUsageOptionIds,
+          onOptionPressed: onUsageToggled,
+        ),
+      ];
+    }
+
+    return [
+      _SurveySectionPanel(
+        color: CompassColors.examNavy,
+        title:
+            'Select the statement that best describes the courses you have taken that cover Digital Literacy.',
+        options: surveyCourseOptions,
+        selectedIds: selectedCourseOptionId == null
+            ? const <int>{}
+            : {selectedCourseOptionId!},
+        onOptionPressed: onCourseSelected,
+      ),
+      _SurveySectionPanel(
+        color: const Color(0xFF008D3D),
+        title:
+            'Select all types of resources you used to prepare for the exam.',
+        options: surveyResourceOptions,
+        selectedIds: selectedResourceOptionIds,
+        onOptionPressed: onResourceToggled,
+      ),
+      _SurveySectionPanel(
+        color: const Color(0xFF1CB3AD),
+        title:
+            'Select all statements that describe how you use your Digital Literacy skills.',
+        options: surveyUsageOptions,
+        selectedIds: selectedUsageOptionIds,
+        onOptionPressed: onUsageToggled,
+      ),
+    ];
+  }
+
+  Color _sectionColor(String theme, int index) {
+    return switch (theme) {
+      'green' => const Color(0xFF008D3D),
+      'teal' => const Color(0xFF1CB3AD),
+      'navy' => CompassColors.examNavy,
+      _ => [
+        CompassColors.examNavy,
+        const Color(0xFF008D3D),
+        const Color(0xFF1CB3AD),
+      ][index.clamp(0, 2)],
+    };
   }
 }
 

@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'data/compass_models.dart';
+import 'data/compass_repository.dart';
+import 'data/supabase_compass_repository.dart';
+import 'state/auth_cubit.dart';
+import 'state/exam_session_cubit.dart';
+import 'state/portal_cubit.dart';
+import 'state/score_report_cubit.dart';
 import 'ui/compass_components.dart';
 import 'ui/compass_home.dart';
 import 'ui/compass_theme.dart';
@@ -13,6 +22,10 @@ const String _lockdownMessage =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: CompassConfig.supabaseUrl,
+    anonKey: CompassConfig.supabasePublishableKey,
+  );
   await windowManager.ensureInitialized();
 
   const windowOptions = WindowOptions(
@@ -44,6 +57,7 @@ class CompassApp extends StatefulWidget {
 }
 
 class _CompassAppState extends State<CompassApp> with WindowListener {
+  late final CompassRepository _repository = SupabaseCompassRepository();
   bool _examLockdownMode = false;
   bool _enteringSecureExam = false;
   bool _lockdownNoticeVisible = false;
@@ -214,13 +228,26 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
       debugShowCheckedModeBanner: false,
       title: 'Compass',
       theme: buildCompassTheme(),
-      home: CompassHome(
-        examLockdownMode: _examLockdownMode,
-        enteringSecureExam: _enteringSecureExam,
-        onStartExam: _enterExamLockdownMode,
-        onExitSecureWorkspace: _exitExamLockdownMode,
-        onCloseWindow: _showExitSimulation,
-        onBlockedExit: _showLockdownNotice,
+      home: MultiRepositoryProvider(
+        providers: [
+          RepositoryProvider<CompassRepository>.value(value: _repository),
+        ],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => AuthCubit(_repository)),
+            BlocProvider(create: (_) => PortalCubit(_repository)),
+            BlocProvider(create: (_) => ExamSessionCubit(_repository)),
+            BlocProvider(create: (_) => ScoreReportCubit()),
+          ],
+          child: CompassHome(
+            examLockdownMode: _examLockdownMode,
+            enteringSecureExam: _enteringSecureExam,
+            onStartExam: _enterExamLockdownMode,
+            onExitSecureWorkspace: _exitExamLockdownMode,
+            onCloseWindow: _showExitSimulation,
+            onBlockedExit: _showLockdownNotice,
+          ),
+        ),
       ),
     );
   }

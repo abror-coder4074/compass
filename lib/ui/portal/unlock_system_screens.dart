@@ -15,6 +15,10 @@ class VerifyUnlockScreen extends StatelessWidget {
     required this.onProctorChanged,
     required this.onPrevious,
     required this.onContinue,
+    this.candidateName = 'Ism\nFamiliya',
+    this.testCenterName = 'Edu Action LLC.',
+    this.durationText = '00:50:00',
+    this.examGroup = 'None',
     super.key,
   });
 
@@ -27,14 +31,16 @@ class VerifyUnlockScreen extends StatelessWidget {
   final ValueChanged<String> onProctorChanged;
   final VoidCallback onPrevious;
   final VoidCallback onContinue;
+  final String candidateName;
+  final String testCenterName;
+  final String durationText;
+  final String examGroup;
 
   @override
   Widget build(BuildContext context) {
     final voucher = voucherCode.trim();
     final paymentType = voucher.isEmpty ? 'No voucher' : 'Voucher';
-    final examTitle = selectedExam.contains('GS6 Level 1')
-        ? 'IC3 GS6 Level 1'
-        : selectedExam;
+    final examTitle = _shortExamTitle(selectedExam);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(55, 17, 55, 52),
@@ -52,6 +58,10 @@ class VerifyUnlockScreen extends StatelessWidget {
             examTitle: examTitle,
             language: language,
             paymentType: paymentType,
+            candidateName: candidateName,
+            testCenterName: testCenterName,
+            durationText: durationText,
+            examGroup: examGroup,
           ),
           const SizedBox(height: 38),
           const _ReadyForProctorLine(),
@@ -75,6 +85,13 @@ class VerifyUnlockScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+String _shortExamTitle(String selectedExam) {
+  if (selectedExam.startsWith('IC3 Digital Literacy GS6 ')) {
+    return selectedExam.replaceFirst('IC3 Digital Literacy GS6 ', 'IC3 GS6 ');
+  }
+  return selectedExam;
 }
 
 class _VerifyNotice extends StatelessWidget {
@@ -134,11 +151,19 @@ class _CandidateExamInformation extends StatelessWidget {
     required this.examTitle,
     required this.language,
     required this.paymentType,
+    required this.candidateName,
+    required this.testCenterName,
+    required this.durationText,
+    required this.examGroup,
   });
 
   final String examTitle;
   final String language;
   final String paymentType;
+  final String candidateName;
+  final String testCenterName;
+  final String durationText;
+  final String examGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -174,11 +199,11 @@ class _CandidateExamInformation extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Expanded(
+                      Expanded(
                         flex: 23,
                         child: Text(
-                          'Ism\nFamiliya',
-                          style: TextStyle(
+                          candidateName,
+                          style: const TextStyle(
                             color: Colors.black,
                             fontSize: 23,
                             height: 1.18,
@@ -191,13 +216,15 @@ class _CandidateExamInformation extends StatelessWidget {
                         child: _ExamDetails(
                           examTitle: examTitle,
                           language: language,
+                          durationText: durationText,
+                          examGroup: examGroup,
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         flex: 22,
                         child: Text(
-                          'Edu Action LLC.',
-                          style: TextStyle(fontSize: 14.5),
+                          testCenterName,
+                          style: const TextStyle(fontSize: 14.5),
                         ),
                       ),
                       Expanded(
@@ -245,10 +272,17 @@ class _CandidateTableHeader extends StatelessWidget {
 }
 
 class _ExamDetails extends StatelessWidget {
-  const _ExamDetails({required this.examTitle, required this.language});
+  const _ExamDetails({
+    required this.examTitle,
+    required this.language,
+    required this.durationText,
+    required this.examGroup,
+  });
 
   final String examTitle;
   final String language;
+  final String durationText;
+  final String examGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -285,9 +319,9 @@ class _ExamDetails extends StatelessWidget {
         const SizedBox(height: 28),
         const Text('Accommodations: None', style: TextStyle(fontSize: 14.5)),
         const SizedBox(height: 22),
-        const Text('Duration: 00:50:00', style: TextStyle(fontSize: 14.5)),
+        Text('Duration: $durationText', style: const TextStyle(fontSize: 14.5)),
         const SizedBox(height: 22),
-        const Text('Exam Group: None', style: TextStyle(fontSize: 14.5)),
+        Text('Exam Group: $examGroup', style: const TextStyle(fontSize: 14.5)),
       ],
     );
   }
@@ -448,12 +482,21 @@ class SystemCheckScreen extends StatelessWidget {
     required this.selectedExam,
     required this.onPrevious,
     required this.onNext,
+    this.checkLabels = const [
+      'User Admin',
+      'Hardware Requirements',
+      'Printer Driver',
+      'Running Processes',
+      'Exam Up to Date',
+      'VBScript',
+    ],
     super.key,
   });
 
   final String selectedExam;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
+  final List<String> checkLabels;
 
   @override
   Widget build(BuildContext context) {
@@ -463,12 +506,12 @@ class SystemCheckScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'IC3 GS6 Level 1',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w400),
+          Text(
+            _shortExamTitle(selectedExam),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w400),
           ),
           const SizedBox(height: 6),
-          const _SystemCheckList(),
+          _SystemCheckList(checkLabels: checkLabels),
           const SizedBox(height: 7),
           const Divider(height: 1, color: Color(0xFFE3E3E3)),
           const SizedBox(height: 10),
@@ -480,18 +523,15 @@ class SystemCheckScreen extends StatelessWidget {
 }
 
 class _SystemCheckList extends StatelessWidget {
-  const _SystemCheckList();
+  const _SystemCheckList({required this.checkLabels});
+
+  final List<String> checkLabels;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
-        _SystemCheckRow(label: 'User Admin'),
-        _SystemCheckRow(label: 'Hardware Requirements'),
-        _SystemCheckRow(label: 'Printer Driver'),
-        _SystemCheckRow(label: 'Running Processes'),
-        _SystemCheckRow(label: 'Exam Up to Date'),
-        _SystemCheckRow(label: 'VBScript'),
+        for (final label in checkLabels) _SystemCheckRow(label: label),
       ],
     );
   }

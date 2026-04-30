@@ -63,8 +63,13 @@ extension _ExamFlowLayout on _ExamFlowState {
         onCourseSelected: _handleSurveyCourseSelection,
         onResourceToggled: _toggleSurveyResource,
         onUsageToggled: _toggleSurveyUsage,
+        sections: widget.surveySections,
       ),
-      ExamFlowStage.tutorial => const ExamTutorialScreen(),
+      ExamFlowStage.tutorial => ExamTutorialScreen(
+        examTitle: widget.selectedExam,
+        questionCount: _session.totalQuestions,
+        durationMinutes: widget.timerConfig.initialDuration.inMinutes,
+      ),
       ExamFlowStage.question => ExamQuestionScreen(
         question: _session.currentQuestion,
         onAnswerSelected: _selectAnswer,
@@ -81,7 +86,9 @@ extension _ExamFlowLayout on _ExamFlowState {
       ExamFlowStage.feedbackForm => ExamFeedbackFormScreen(
         controller: _feedbackController,
       ),
-      ExamFlowStage.feedbackThankYou => const ExamFeedbackThankYouScreen(),
+      ExamFlowStage.feedbackThankYou => ExamFeedbackThankYouScreen(
+        examTitle: widget.selectedExam,
+      ),
     };
   }
 

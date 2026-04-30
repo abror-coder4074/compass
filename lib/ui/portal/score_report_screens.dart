@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/compass_models.dart';
 import '../compass_components.dart';
 import '../compass_theme.dart';
 
@@ -12,6 +13,8 @@ class ScoreSummaryScreen extends StatelessWidget {
     required this.email,
     required this.onEmailChanged,
     required this.onViewFullScoreReport,
+    this.scoreReport,
+    this.pathways,
     super.key,
   });
 
@@ -19,6 +22,8 @@ class ScoreSummaryScreen extends StatelessWidget {
   final String email;
   final ValueChanged<String> onEmailChanged;
   final VoidCallback onViewFullScoreReport;
+  final ScoreReportData? scoreReport;
+  final List<PathwayData>? pathways;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +57,7 @@ class ScoreSummaryScreen extends StatelessWidget {
                 title: 'Exam Score Summary',
                 child: _ExamScoreSummaryContent(
                   selectedExam: selectedExam,
+                  scoreReport: scoreReport,
                   onViewFullScoreReport: onViewFullScoreReport,
                 ),
               ),
@@ -59,6 +65,7 @@ class ScoreSummaryScreen extends StatelessWidget {
               _ScorePortalPanel(
                 title: 'Pathways',
                 child: _PathwaysContent(
+                  pathways: pathways ?? scoreReport?.pathways,
                   onViewDetails: (pathway) =>
                       _showPathwayDetailsDialog(context, pathway),
                 ),
@@ -149,7 +156,9 @@ class ScoreSummaryScreen extends StatelessWidget {
 }
 
 class FullScoreReportScreen extends StatelessWidget {
-  const FullScoreReportScreen({super.key});
+  const FullScoreReportScreen({this.scoreReport, super.key});
+
+  final ScoreReportData? scoreReport;
 
   @override
   Widget build(BuildContext context) {
@@ -162,9 +171,9 @@ class FullScoreReportScreen extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 980),
-              child: const Padding(
-                padding: EdgeInsets.only(top: 48),
-                child: _ScoreReportDocument(),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 48),
+                child: _ScoreReportDocument(scoreReport: scoreReport),
               ),
             ),
           ),

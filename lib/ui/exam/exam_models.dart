@@ -25,6 +25,7 @@ enum ExamQuestionType {
 
 class ExamQuestion {
   ExamQuestion({
+    this.id,
     required this.number,
     required this.prompt,
     this.promptDetails = const [],
@@ -59,6 +60,7 @@ class ExamQuestion {
                : <String>[]),
        matchingSelections = matchingSelections ?? <int, String>{};
 
+  String? id;
   final int number;
   final String prompt;
   final List<String> promptDetails;

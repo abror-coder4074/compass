@@ -17,6 +17,12 @@ class ExamSelectScreen extends StatelessWidget {
     required this.onSelectExam,
     required this.onRemoveVoucher,
     required this.onPrevious,
+    this.programOptions = portalPrograms,
+    this.examTitles = const [
+      'IC3 GS5 SR - Computing Fundamentals',
+      'IC3 GS5 SR - Key Applications',
+      'IC3 GS5 SR - Living Online',
+    ],
     super.key,
   });
 
@@ -30,6 +36,8 @@ class ExamSelectScreen extends StatelessWidget {
   final ValueChanged<String> onSelectExam;
   final VoidCallback onRemoveVoucher;
   final VoidCallback onPrevious;
+  final Map<String, String> programOptions;
+  final List<String> examTitles;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +76,7 @@ class ExamSelectScreen extends StatelessWidget {
               const SizedBox(height: 18),
               _ExamFilters(
                 program: program,
+                programOptions: programOptions,
                 searchController: searchController,
                 onProgramChanged: onProgramChanged,
               ),
@@ -80,6 +89,7 @@ class ExamSelectScreen extends StatelessWidget {
               ],
               const SizedBox(height: 18),
               _ExamCatalogCard(
+                examTitles: examTitles,
                 selectedExam: selectedExam,
                 onSelectExam: onSelectExam,
               ),
@@ -101,11 +111,13 @@ class ExamSelectScreen extends StatelessWidget {
 class _ExamFilters extends StatelessWidget {
   const _ExamFilters({
     required this.program,
+    required this.programOptions,
     required this.searchController,
     required this.onProgramChanged,
   });
 
   final String program;
+  final Map<String, String> programOptions;
   final TextEditingController searchController;
   final ValueChanged<String?> onProgramChanged;
 
@@ -115,7 +127,8 @@ class _ExamFilters extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 680;
         final programField = _ProgramSelect(
-          value: portalPrograms.containsKey(program) ? program : 'All programs',
+          value: programOptions.containsKey(program) ? program : 'All programs',
+          options: programOptions,
           onChanged: onProgramChanged,
         );
         final searchField = _SearchExamInput(controller: searchController);
@@ -139,9 +152,14 @@ class _ExamFilters extends StatelessWidget {
 }
 
 class _ProgramSelect extends StatelessWidget {
-  const _ProgramSelect({required this.value, required this.onChanged});
+  const _ProgramSelect({
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
 
   final String value;
+  final Map<String, String> options;
   final ValueChanged<String?> onChanged;
 
   @override
@@ -155,7 +173,7 @@ class _ProgramSelect extends StatelessWidget {
         decoration: const InputDecoration(
           contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         ),
-        items: portalPrograms.entries
+        items: options.entries
             .map(
               (entry) => DropdownMenuItem<String>(
                 value: entry.key,
@@ -193,16 +211,12 @@ class _SearchExamInput extends StatelessWidget {
 
 class _ExamCatalogCard extends StatelessWidget {
   const _ExamCatalogCard({
+    required this.examTitles,
     required this.selectedExam,
     required this.onSelectExam,
   });
 
-  static const _exams = [
-    'IC3 GS5 SR - Computing Fundamentals',
-    'IC3 GS5 SR - Key Applications',
-    'IC3 GS5 SR - Living Online',
-  ];
-
+  final List<String> examTitles;
   final String selectedExam;
   final ValueChanged<String> onSelectExam;
 
@@ -244,12 +258,12 @@ class _ExamCatalogCard extends StatelessWidget {
             child: Column(
               children: [
                 const _ExamTableHeader(),
-                for (var i = 0; i < _exams.length; i++)
+                for (var i = 0; i < examTitles.length; i++)
                   _ExamCatalogRow(
-                    title: _exams[i],
-                    selected: selectedExam == _exams[i],
-                    showDivider: i != _exams.length - 1,
-                    onSelect: () => onSelectExam(_exams[i]),
+                    title: examTitles[i],
+                    selected: selectedExam == examTitles[i],
+                    showDivider: i != examTitles.length - 1,
+                    onSelect: () => onSelectExam(examTitles[i]),
                   ),
               ],
             ),

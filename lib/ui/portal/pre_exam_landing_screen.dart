@@ -8,10 +8,16 @@ class PreExamLandingScreen extends StatelessWidget {
     required this.selectedExam,
     required this.onCloseWindow,
     required this.onStartExam,
+    this.durationMinutes = 50,
+    this.questionCount = 45,
+    this.passScore = 700,
     super.key,
   });
 
   final String selectedExam;
+  final int durationMinutes;
+  final int questionCount;
+  final int passScore;
   final Future<void> Function() onCloseWindow;
   final Future<void> Function() onStartExam;
 
@@ -37,7 +43,12 @@ class PreExamLandingScreen extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxWidth < 900;
-                final infoPanel = _LandingInfoPanel(selectedExam: selectedExam);
+                final infoPanel = _LandingInfoPanel(
+                  selectedExam: selectedExam,
+                  durationMinutes: durationMinutes,
+                  questionCount: questionCount,
+                  passScore: passScore,
+                );
                 final photo = Image.asset(
                   CompassAssets.examLandingPhoto,
                   fit: BoxFit.cover,
@@ -149,9 +160,17 @@ class _LandingFooter extends StatelessWidget {
 }
 
 class _LandingInfoPanel extends StatelessWidget {
-  const _LandingInfoPanel({required this.selectedExam});
+  const _LandingInfoPanel({
+    required this.selectedExam,
+    required this.durationMinutes,
+    required this.questionCount,
+    required this.passScore,
+  });
 
   final String selectedExam;
+  final int durationMinutes;
+  final int questionCount;
+  final int passScore;
 
   @override
   Widget build(BuildContext context) {
@@ -194,21 +213,23 @@ class _LandingInfoPanel extends StatelessWidget {
                     height: 2.05,
                     fontFamily: 'Arial',
                   ),
-                  children: const [
-                    TextSpan(text: 'Maximum exam time: '),
+                  children: [
+                    const TextSpan(text: 'Maximum exam time: '),
                     TextSpan(
-                      text: '50 minutes\n',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      text: '$durationMinutes minutes\n',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    TextSpan(text: 'Number of exam questions: '),
+                    const TextSpan(text: 'Number of exam questions: '),
                     TextSpan(
-                      text: '45\n',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      text: '$questionCount\n',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    TextSpan(text: 'Minimum score required to pass exam: '),
+                    const TextSpan(
+                      text: 'Minimum score required to pass exam: ',
+                    ),
                     TextSpan(
-                      text: '700',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      text: '$passScore',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),

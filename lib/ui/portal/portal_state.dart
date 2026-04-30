@@ -1,6 +1,5 @@
 enum PortalFlowStep {
   login,
-  address,
   readiness,
   examSelect,
   nda,

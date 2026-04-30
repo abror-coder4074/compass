@@ -1,7 +1,9 @@
 part of 'score_report_screens.dart';
 
 class _ScoreReportDocument extends StatelessWidget {
-  const _ScoreReportDocument();
+  const _ScoreReportDocument({this.scoreReport});
+
+  final ScoreReportData? scoreReport;
 
   @override
   Widget build(BuildContext context) {
@@ -37,48 +39,45 @@ class _ScoreReportDocument extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(56, 34, 56, 0),
           child: Column(
             children: [
-              const Row(
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _GreenPanel(
                       title: 'CANDIDATE',
                       child: Text(
-                        'Alex Morgan\n'
-                        '41 Amir Temur Street, Office 1205\n'
-                        'Tashkent 100000\n'
-                        'Uzbekistan\n\n'
-                        'Candidate ID: CP-842916\n'
-                        'alex.morgan@example.com',
-                        style: TextStyle(fontSize: 18, height: 1.32),
+                        _candidateText,
+                        style: const TextStyle(fontSize: 18, height: 1.32),
                       ),
                     ),
                   ),
-                  SizedBox(width: 16),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: _GreenPanel(
                       title: 'EXAM',
                       child: Text(
-                        'IC3 Digital Literacy GS6 Level 1\n\n'
-                        'Exam ID: IC3-GS6-L1-2026\n'
-                        'Session ID: COMPASS-2026-0312-1842\n'
-                        'Testing Center: Edu Action LLC.\n'
-                        'Date: March 12, 2026',
-                        style: TextStyle(fontSize: 18, height: 1.32),
+                        _examText,
+                        style: const TextStyle(fontSize: 18, height: 1.32),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 18),
-              const _ResultsGrid(),
+              _ResultsGrid(scoreReport: scoreReport),
               const SizedBox(height: 24),
-              const Row(
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 7, child: _SectionAnalysisTable()),
-                  SizedBox(width: 16),
-                  Expanded(flex: 3, child: _FinalScoreColumn()),
+                  Expanded(
+                    flex: 7,
+                    child: _SectionAnalysisTable(scoreReport: scoreReport),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 3,
+                    child: _FinalScoreColumn(scoreReport: scoreReport),
+                  ),
                 ],
               ),
             ],
@@ -103,6 +102,38 @@ class _ScoreReportDocument extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String get _candidateText {
+    final candidate = scoreReport?.candidate;
+    if (candidate == null) {
+      return 'Alex Morgan\n'
+          '41 Amir Temur Street, Office 1205\n'
+          'Tashkent 100000\n'
+          'Uzbekistan\n\n'
+          'Candidate ID: CP-842916\n'
+          'alex.morgan@example.com';
+    }
+    return '${candidate.displayName}\n'
+        '${candidate.reportAddress}\n\n'
+        'Candidate ID: ${candidate.candidateIdentifier}\n'
+        '${candidate.email}';
+  }
+
+  String get _examText {
+    final report = scoreReport;
+    if (report == null) {
+      return 'IC3 Digital Literacy GS6 Level 1\n\n'
+          'Exam ID: IC3-GS6-L1-2026\n'
+          'Session ID: COMPASS-2026-0312-1842\n'
+          'Testing Center: Edu Action LLC.\n'
+          'Date: March 12, 2026';
+    }
+    return '${report.exam.title}\n\n'
+        'Exam ID: ${report.exam.code}\n'
+        'Session ID: ${report.sessionId}\n'
+        'Testing Center: ${report.testCenter.name}\n'
+        'Date: ${DateTime.now().toLocal().toString().split(' ').first}';
   }
 }
 
@@ -139,7 +170,9 @@ class _GreenPanel extends StatelessWidget {
 }
 
 class _ResultsGrid extends StatelessWidget {
-  const _ResultsGrid();
+  const _ResultsGrid({this.scoreReport});
+
+  final ScoreReportData? scoreReport;
 
   @override
   Widget build(BuildContext context) {
@@ -159,13 +192,13 @@ class _ResultsGrid extends StatelessWidget {
             ),
             _ResultScoreRow(
               label: 'Required Score',
-              score: 700,
+              score: scoreReport?.requiredScore ?? 700,
               labelWidth: labelWidth,
               scoreWidth: scoreWidth,
             ),
             _ResultScoreRow(
               label: 'Your Score',
-              score: 700,
+              score: scoreReport?.candidateScore ?? 700,
               labelWidth: labelWidth,
               scoreWidth: scoreWidth,
             ),
@@ -258,7 +291,9 @@ class _ResultScoreRow extends StatelessWidget {
 }
 
 class _SectionAnalysisTable extends StatelessWidget {
-  const _SectionAnalysisTable();
+  const _SectionAnalysisTable({this.scoreReport});
+
+  final ScoreReportData? scoreReport;
 
   @override
   Widget build(BuildContext context) {
@@ -268,19 +303,28 @@ class _SectionAnalysisTable extends StatelessWidget {
         border: TableBorder.all(color: const Color(0xFF7E7E7E)),
         columnWidths: const {0: FlexColumnWidth(4), 1: FlexColumnWidth(1)},
         children: [
-          for (var i = 0; i < _sectionScores.length; i++)
+          for (var i = 0; i < _displayScores.length; i++)
             TableRow(
               decoration: BoxDecoration(
                 color: i.isEven ? const Color(0xFFD4D5D6) : Colors.white,
               ),
               children: [
-                _reportTableCell(_sectionScores[i].name),
-                _reportTableCell('${_sectionScores[i].score}%'),
+                _reportTableCell(_displayScores[i].name),
+                _reportTableCell('${_displayScores[i].score}%'),
               ],
             ),
         ],
       ),
     );
+  }
+
+  List<SectionScoreData> get _displayScores {
+    return scoreReport?.sectionScores ??
+        _sectionScores
+            .map(
+              (score) => SectionScoreData(name: score.name, score: score.score),
+            )
+            .toList();
   }
 
   Widget _reportTableCell(String text) {
@@ -292,7 +336,9 @@ class _SectionAnalysisTable extends StatelessWidget {
 }
 
 class _FinalScoreColumn extends StatelessWidget {
-  const _FinalScoreColumn();
+  const _FinalScoreColumn({this.scoreReport});
+
+  final ScoreReportData? scoreReport;
 
   @override
   Widget build(BuildContext context) {
@@ -303,18 +349,24 @@ class _FinalScoreColumn extends StatelessWidget {
           child: Table(
             border: TableBorder.all(color: const Color(0xFF7E7E7E)),
             columnWidths: const {0: FlexColumnWidth(2), 1: FlexColumnWidth(1)},
-            children: const [
+            children: [
               TableRow(
-                decoration: BoxDecoration(color: Color(0xFFD4D5D6)),
+                decoration: const BoxDecoration(color: Color(0xFFD4D5D6)),
                 children: [
-                  _FinalScoreCell('Required Score'),
-                  _FinalScoreCell('700', centered: true),
+                  const _FinalScoreCell('Required Score'),
+                  _FinalScoreCell(
+                    '${scoreReport?.requiredScore ?? 700}',
+                    centered: true,
+                  ),
                 ],
               ),
               TableRow(
                 children: [
-                  _FinalScoreCell('Your Score'),
-                  _FinalScoreCell('700', centered: true),
+                  const _FinalScoreCell('Your Score'),
+                  _FinalScoreCell(
+                    '${scoreReport?.candidateScore ?? 700}',
+                    centered: true,
+                  ),
                 ],
               ),
             ],
@@ -328,15 +380,18 @@ class _FinalScoreColumn extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border.all(color: const Color(0xFF7E7E7E)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.only(left: 10),
-                    child: Text('Pass', style: TextStyle(fontSize: 20)),
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Text(
+                      scoreReport?.outcome ?? 'Pass',
+                      style: const TextStyle(fontSize: 20),
+                    ),
                   ),
                 ),
-                SizedBox(
+                const SizedBox(
                   width: 74,
                   child: Icon(
                     Icons.check,

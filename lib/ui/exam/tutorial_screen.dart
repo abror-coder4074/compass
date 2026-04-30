@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../compass_theme.dart';
-import 'exam_mock_data.dart';
 import 'tutorial_sample_question.dart';
 
 class ExamTutorialScreen extends StatelessWidget {
-  const ExamTutorialScreen({super.key});
+  const ExamTutorialScreen({
+    required this.examTitle,
+    required this.questionCount,
+    required this.durationMinutes,
+    super.key,
+  });
+
+  final String examTitle;
+  final int questionCount;
+  final int durationMinutes;
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +34,10 @@ class ExamTutorialScreen extends StatelessWidget {
                 color: CompassColors.examNavy,
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  tutorialExamTitle,
-                  style: TextStyle(
+                  examTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -38,19 +46,19 @@ class ExamTutorialScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            const Padding(
-              padding: EdgeInsets.only(left: 20),
+            Padding(
+              padding: const EdgeInsets.only(left: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _TutorialBullet(
                     text: 'This exam has ',
-                    strongText: '45 questions.',
+                    strongText: '$questionCount questions.',
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   _TutorialBullet(
                     text: 'The maximum exam time is ',
-                    strongText: '50 minutes.',
+                    strongText: '$durationMinutes minutes.',
                   ),
                 ],
               ),

@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:compass/data/compass_models.dart';
+import 'package:compass/data/compass_repository.dart';
+import 'package:compass/data/local_compass_repository.dart';
+import 'package:compass/state/auth_cubit.dart';
+import 'package:compass/state/exam_session_cubit.dart';
+import 'package:compass/state/portal_cubit.dart';
+import 'package:compass/state/score_report_cubit.dart';
 import 'package:compass/ui/compass_home.dart';
 import 'package:compass/ui/compass_theme.dart';
 import 'package:compass/ui/exam/exam_flow.dart';
@@ -58,7 +66,67 @@ void main() {
     expect(matchingQuestion.isAnswered, isTrue);
   });
 
-  testWidgets('login opens mailing address step', (WidgetTester tester) async {
+  test('json parser supports boolean and snake case question types', () {
+    final trueFalseQuestion = examQuestionFromJson({
+      'id': 'true-false-question',
+      'number': 1,
+      'prompt': 'SSD is faster than HDD.',
+      'type': 'true_false',
+    });
+
+    expect(trueFalseQuestion.type, ExamQuestionType.singleChoice);
+    expect(trueFalseQuestion.options, const ['True', 'False']);
+    trueFalseQuestion.selectedOption = 'A';
+    expect(trueFalseQuestion.isAnswered, isTrue);
+
+    final yesNoQuestion = examQuestionFromJson({
+      'id': 'yes-no-question',
+      'number': 2,
+      'prompt': 'Would this action help?',
+      'type': 'yes-no',
+    });
+
+    expect(yesNoQuestion.type, ExamQuestionType.singleChoice);
+    expect(yesNoQuestion.options, const ['Yes', 'No']);
+
+    final singleAnswerMultipleChoice = examQuestionFromJson({
+      'id': 'single-answer-multiple-choice',
+      'number': 3,
+      'prompt': 'Choose one.',
+      'type': 'multiple_choice',
+      'options': ['One', 'Two', 'Three'],
+    });
+
+    expect(singleAnswerMultipleChoice.type, ExamQuestionType.singleChoice);
+
+    final multiSelectQuestion = examQuestionFromJson({
+      'id': 'multi-select-question',
+      'number': 4,
+      'prompt': 'Choose two.',
+      'type': 'multipleChoice',
+      'required_selections': 2,
+      'options': ['One', 'Two', 'Three'],
+    });
+
+    expect(multiSelectQuestion.type, ExamQuestionType.multipleChoice);
+
+    final matrixTrueFalseQuestion = examQuestionFromJson({
+      'id': 'matrix-true-false-question',
+      'number': 5,
+      'prompt': 'For each statement, select True or False.',
+      'type': 'true_false',
+      'matrix_rows': ['First statement', 'Second statement'],
+    });
+
+    expect(matrixTrueFalseQuestion.type, ExamQuestionType.matrix);
+    expect(matrixTrueFalseQuestion.matrixColumns, const ['True', 'False']);
+    expect(matrixTrueFalseQuestion.matrixRows, const [
+      'First statement',
+      'Second statement',
+    ]);
+  });
+
+  testWidgets('login opens readiness step', (WidgetTester tester) async {
     await _pumpHome(tester);
 
     expect(find.text('Login'), findsWidgets);
@@ -66,9 +134,12 @@ void main() {
 
     await _tapButton(tester, 'Login');
 
-    expect(find.text('Mailing address'), findsOneWidget);
+    expect(find.text('Mailing address'), findsNothing);
     expect(find.text('Accept All Cookies'), findsNothing);
-    expect(find.text('Ziyolilar ko\'chasi, 9-uy'), findsOneWidget);
+    expect(
+      find.text('Welcome Certiport, let\'s get ready for your exam!'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('candidate portal reaches NDA and gates Next until accepted', (
@@ -76,7 +147,6 @@ void main() {
   ) async {
     await _pumpHome(tester);
     await _tapButton(tester, 'Login');
-    await _tapButton(tester, 'Continue');
 
     expect(
       find.text('Welcome Certiport, let\'s get ready for your exam!'),
@@ -128,7 +198,6 @@ void main() {
   ) async {
     await _pumpHome(tester);
     await _tapButton(tester, 'Login');
-    await _tapButton(tester, 'Continue');
 
     final voucherToggle = find.byKey(
       const ValueKey('readiness-voucher-toggle'),
@@ -480,34 +549,48 @@ Future<void> _pumpHome(
   ExamTimerConfig examTimerConfig = const ExamTimerConfig(),
 }) async {
   var lockdown = examLockdownMode;
+  final repository = LocalCompassRepository();
 
   await tester.pumpWidget(
     MaterialApp(
       theme: buildCompassTheme(),
-      home: StatefulBuilder(
-        builder: (context, setState) {
-          return CompassHome(
-            examLockdownMode: lockdown,
-            onStartExam: onStartExam ?? () async {},
-            onExitSecureWorkspace: () async {
-              setState(() {
-                lockdown = false;
-              });
-              await onExitSecureWorkspace?.call();
+      home: MultiRepositoryProvider(
+        providers: [
+          RepositoryProvider<CompassRepository>.value(value: repository),
+        ],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => AuthCubit(repository)),
+            BlocProvider(create: (_) => PortalCubit(repository)),
+            BlocProvider(create: (_) => ExamSessionCubit(repository)),
+            BlocProvider(create: (_) => ScoreReportCubit()),
+          ],
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return CompassHome(
+                examLockdownMode: lockdown,
+                onStartExam: onStartExam ?? () async {},
+                onExitSecureWorkspace: () async {
+                  setState(() {
+                    lockdown = false;
+                  });
+                  await onExitSecureWorkspace?.call();
+                },
+                onCloseWindow: () async {},
+                onBlockedExit: onBlockedExit ?? ({title, message}) async {},
+                examTimerConfig: examTimerConfig,
+              );
             },
-            onCloseWindow: () async {},
-            onBlockedExit: onBlockedExit ?? ({title, message}) async {},
-            examTimerConfig: examTimerConfig,
-          );
-        },
+          ),
+        ),
       ),
     ),
   );
+  await tester.pumpAndSettle();
 }
 
 Future<void> _advanceToNda(WidgetTester tester) async {
   await _tapButton(tester, 'Login');
-  await _tapButton(tester, 'Continue');
   await _tapButton(tester, 'Next');
   await _tapElevatedButton(tester, 'Select exam');
 }

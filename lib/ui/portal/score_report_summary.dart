@@ -71,10 +71,12 @@ class _ExamScoreSummaryContent extends StatelessWidget {
   const _ExamScoreSummaryContent({
     required this.selectedExam,
     required this.onViewFullScoreReport,
+    this.scoreReport,
   });
 
   final String selectedExam;
   final VoidCallback onViewFullScoreReport;
+  final ScoreReportData? scoreReport;
 
   @override
   Widget build(BuildContext context) {
@@ -87,9 +89,10 @@ class _ExamScoreSummaryContent extends StatelessWidget {
           header: true,
         ),
         _SummaryTableRow(
-          examName: _shortExamName(selectedExam),
-          score: '700/1000',
-          status: 'Pass',
+          examName:
+              scoreReport?.exam.shortTitle ?? _shortExamName(selectedExam),
+          score: '${scoreReport?.candidateScore ?? 700}/1000',
+          status: scoreReport?.outcome ?? 'Pass',
           action: CompassPrimaryButton(
             label: 'View Full Score Report',
             onPressed: onViewFullScoreReport,
@@ -100,8 +103,8 @@ class _ExamScoreSummaryContent extends StatelessWidget {
   }
 
   static String _shortExamName(String selectedExam) {
-    if (selectedExam.contains('GS6')) {
-      return 'IC3 GS6 Level 1';
+    if (selectedExam.startsWith('IC3 Digital Literacy GS6 ')) {
+      return selectedExam.replaceFirst('IC3 Digital Literacy GS6 ', 'IC3 GS6 ');
     }
     return selectedExam;
   }
@@ -212,12 +215,19 @@ class _SummaryTableRow extends StatelessWidget {
 }
 
 class _PathwaysContent extends StatelessWidget {
-  const _PathwaysContent({required this.onViewDetails});
+  const _PathwaysContent({required this.onViewDetails, this.pathways});
 
+  final List<PathwayData>? pathways;
   final ValueChanged<_Pathway> onViewDetails;
 
   @override
   Widget build(BuildContext context) {
+    final displayPathways =
+        pathways
+            ?.map((pathway) => _Pathway(pathway.name, pathway.percentComplete))
+            .toList() ??
+        _pathways;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -256,7 +266,7 @@ class _PathwaysContent extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         const _PathwayHeaderRow(),
-        for (final pathway in _pathways)
+        for (final pathway in displayPathways)
           _PathwayRow(pathway: pathway, onViewDetails: onViewDetails),
       ],
     );

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../data/compass_models.dart';
 import '../compass_components.dart';
 import '../compass_shells.dart';
 import '../compass_theme.dart';
@@ -34,6 +35,10 @@ class ExamFlow extends StatefulWidget {
     required this.selectedExam,
     required this.onBlockedExit,
     required this.onExamCompleted,
+    this.questions,
+    this.surveySections = const [],
+    this.onQuestionChanged,
+    this.onFeedbackSubmitted,
     this.timerConfig = const ExamTimerConfig(),
     super.key,
   });
@@ -41,6 +46,10 @@ class ExamFlow extends StatefulWidget {
   final String selectedExam;
   final Future<void> Function() onBlockedExit;
   final Future<void> Function() onExamCompleted;
+  final List<ExamQuestion>? questions;
+  final List<SurveySectionData> surveySections;
+  final ValueChanged<ExamQuestion>? onQuestionChanged;
+  final ValueChanged<String>? onFeedbackSubmitted;
   final ExamTimerConfig timerConfig;
 
   @override
@@ -71,7 +80,10 @@ class _ExamFlowState extends State<ExamFlow> {
     _timer?.cancel();
     _feedbackController.clear();
     _session = ExamSessionState.initial(
-      questions: buildMockExamQuestions(),
+      questions: [
+        for (final question in widget.questions ?? buildMockExamQuestions())
+          cloneExamQuestion(question),
+      ],
       initialRemainingTime: widget.timerConfig.initialDuration,
     );
     _statusDialogVisible = false;
@@ -132,6 +144,7 @@ class _ExamFlowState extends State<ExamFlow> {
     setState(() {
       _session.currentQuestion.selectedOption = answer;
     });
+    _notifyQuestionChanged();
   }
 
   void _toggleMultiAnswer(String answer) {
@@ -146,12 +159,14 @@ class _ExamFlowState extends State<ExamFlow> {
         question.selectedOptions.add(answer);
       }
     });
+    _notifyQuestionChanged();
   }
 
   void _selectMatrixAnswer(int rowIndex, String answer) {
     setState(() {
       _session.currentQuestion.matrixSelections[rowIndex] = answer;
     });
+    _notifyQuestionChanged();
   }
 
   void _moveOrderItemToAnswer(String item) {
@@ -161,6 +176,7 @@ class _ExamFlowState extends State<ExamFlow> {
         question.orderedItems.add(item);
       }
     });
+    _notifyQuestionChanged();
   }
 
   void _moveOrderItemToSource(String item) {
@@ -171,6 +187,7 @@ class _ExamFlowState extends State<ExamFlow> {
         question.availableOrderItems.add(item);
       }
     });
+    _notifyQuestionChanged();
   }
 
   void _shiftOrderedItem(int index, int delta) {
@@ -186,6 +203,7 @@ class _ExamFlowState extends State<ExamFlow> {
       final item = question.orderedItems.removeAt(index);
       question.orderedItems.insert(nextIndex, item);
     });
+    _notifyQuestionChanged();
   }
 
   void _assignMatchItem(String item, int targetIndex) {
@@ -202,6 +220,7 @@ class _ExamFlowState extends State<ExamFlow> {
       question.availableMatchItems.remove(item);
       question.matchingSelections[targetIndex] = item;
     });
+    _notifyQuestionChanged();
   }
 
   void _clearMatchTarget(int targetIndex) {
@@ -212,6 +231,7 @@ class _ExamFlowState extends State<ExamFlow> {
         question.availableMatchItems.add(item);
       }
     });
+    _notifyQuestionChanged();
   }
 
   void _toggleReview() {
@@ -219,6 +239,7 @@ class _ExamFlowState extends State<ExamFlow> {
       _session.currentQuestion.markedForReview =
           !_session.currentQuestion.markedForReview;
     });
+    _notifyQuestionChanged();
   }
 
   void _toggleFeedback() {
@@ -226,6 +247,7 @@ class _ExamFlowState extends State<ExamFlow> {
       _session.currentQuestion.markedForFeedback =
           !_session.currentQuestion.markedForFeedback;
     });
+    _notifyQuestionChanged();
   }
 
   void _goBackQuestion() {
@@ -272,9 +294,14 @@ class _ExamFlowState extends State<ExamFlow> {
   }
 
   void _goToFeedbackThankYou() {
+    widget.onFeedbackSubmitted?.call(_feedbackController.text);
     setState(() {
       _session.stage = ExamFlowStage.feedbackThankYou;
     });
+  }
+
+  void _notifyQuestionChanged() {
+    widget.onQuestionChanged?.call(_session.currentQuestion);
   }
 
   Future<void> _completeExam() async {

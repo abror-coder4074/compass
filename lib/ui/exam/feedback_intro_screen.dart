@@ -161,15 +161,17 @@ class ExamFeedbackFormScreen extends StatelessWidget {
 }
 
 class ExamFeedbackThankYouScreen extends StatelessWidget {
-  const ExamFeedbackThankYouScreen({super.key});
+  const ExamFeedbackThankYouScreen({required this.examTitle, super.key});
+
+  final String examTitle;
 
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(50, 76, 50, 36),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(50, 76, 50, 36),
       child: Text(
-        'Thank you for taking the IC3 Digital Literacy GS6 Level 1 exam.',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        'Thank you for taking the $examTitle exam.',
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
       ),
     );
   }

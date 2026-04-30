@@ -9,10 +9,12 @@ class NdaScreen extends StatelessWidget {
     required this.onAgreementChanged,
     required this.onPrevious,
     required this.onNext,
+    this.agreementContent,
     super.key,
   });
 
   final String agreement;
+  final String? agreementContent;
   final ValueChanged<String?> onAgreementChanged;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
@@ -45,7 +47,7 @@ class NdaScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const _NdaAgreementBox(),
+              _NdaAgreementBox(content: agreementContent),
               const SizedBox(height: 18),
               const Text(
                 'To take any exam you must accept this Non-Disclosure Agreement and Terms of Use.',
@@ -94,7 +96,9 @@ class NdaScreen extends StatelessWidget {
 }
 
 class _NdaAgreementBox extends StatefulWidget {
-  const _NdaAgreementBox();
+  const _NdaAgreementBox({this.content});
+
+  final String? content;
 
   @override
   State<_NdaAgreementBox> createState() => _NdaAgreementBoxState();
@@ -144,7 +148,9 @@ class _NdaAgreementBoxState extends State<_NdaAgreementBox> {
         child: SingleChildScrollView(
           controller: _controller,
           padding: const EdgeInsets.fromLTRB(12, 18, 22, 18),
-          child: const _NdaText(),
+          child: widget.content == null || widget.content!.trim().isEmpty
+              ? const _NdaText()
+              : Text(widget.content!, style: _bodyStyle),
         ),
       ),
     );
