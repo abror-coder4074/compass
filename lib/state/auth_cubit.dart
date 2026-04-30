@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/compass_models.dart';
 import '../data/compass_repository.dart';
+import '../data/error_messages.dart';
 
 class AuthState {
   const AuthState({
@@ -60,7 +61,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       return result;
     } catch (error) {
-      emit(state.copyWith(loading: false, error: error.toString()));
+      emit(state.copyWith(loading: false, error: friendlyErrorMessage(error)));
       rethrow;
     }
   }

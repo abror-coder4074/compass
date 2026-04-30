@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 abstract final class CompassAssets {
+  static const appIcon = 'assets/images/compass_app_icon.png';
   static const certiportLogo = 'assets/images/certiport_logo.png';
   static const ic3Logo = 'assets/images/ic3_logo.png';
   static const examLandingPhoto = 'assets/images/exam_landing_photo.png';

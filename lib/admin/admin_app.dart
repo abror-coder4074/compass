@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../data/error_messages.dart';
 import '../ui/compass_theme.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
@@ -1326,14 +1327,7 @@ String _formatValue(Object? value) {
 }
 
 String _friendlyError(Object error) {
-  final text = error.toString();
-  if (text.contains('duplicate key') || text.contains('23505')) {
-    return 'A record with the same unique value already exists.';
-  }
-  if (text.contains('violates foreign key') || text.contains('23503')) {
-    return 'This record references a missing related record.';
-  }
-  return text;
+  return friendlyErrorMessage(error);
 }
 
 String? _validatePositiveInt(String? value) {

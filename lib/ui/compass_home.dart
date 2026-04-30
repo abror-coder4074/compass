@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/compass_models.dart';
+import '../data/error_messages.dart';
 import '../state/auth_cubit.dart';
 import '../state/exam_session_cubit.dart';
 import '../state/portal_cubit.dart';
@@ -172,7 +173,9 @@ class _CompassHomeState extends State<CompassHome> {
         }
       });
     } catch (error) {
-      _showSnackBar('Supabase catalog loading failed: $error');
+      _showSnackBar(
+        'Supabase catalog loading failed: ${friendlyErrorMessage(error)}',
+      );
     }
   }
 
@@ -231,7 +234,9 @@ class _CompassHomeState extends State<CompassHome> {
         return;
       }
       context.read<ScoreReportCubit>().setError(error);
-      _showSnackBar('Could not finish exam session: $error');
+      _showSnackBar(
+        'Could not finish exam session: ${friendlyErrorMessage(error)}',
+      );
     }
   }
 
@@ -308,7 +313,7 @@ class _CompassHomeState extends State<CompassHome> {
         _portalStep = PortalFlowStep.readiness;
       });
     } catch (error) {
-      _showSnackBar('Login failed: $error');
+      _showSnackBar('Login failed: ${friendlyErrorMessage(error)}');
     }
   }
 
@@ -370,14 +375,14 @@ class _CompassHomeState extends State<CompassHome> {
       }
       _goTo(PortalFlowStep.systemCheck);
     } catch (error) {
-      _showSnackBar('Could not unlock exam: $error');
+      _showSnackBar('Could not unlock exam: ${friendlyErrorMessage(error)}');
     }
   }
 
   void _persistQuestion(ExamQuestion question) {
     unawaited(
       context.read<ExamSessionCubit>().saveAnswer(question).catchError((error) {
-        _showSnackBar('Could not save answer: $error');
+        _showSnackBar('Could not save answer: ${friendlyErrorMessage(error)}');
       }),
     );
   }
@@ -387,7 +392,9 @@ class _CompassHomeState extends State<CompassHome> {
       context.read<ExamSessionCubit>().saveFeedback(feedback).catchError((
         error,
       ) {
-        _showSnackBar('Could not save feedback: $error');
+        _showSnackBar(
+          'Could not save feedback: ${friendlyErrorMessage(error)}',
+        );
       }),
     );
   }
@@ -400,7 +407,7 @@ class _CompassHomeState extends State<CompassHome> {
         setState(() => _candidateEmail = updated.email);
       }
     } catch (error) {
-      _showSnackBar('Could not update email: $error');
+      _showSnackBar('Could not update email: ${friendlyErrorMessage(error)}');
     }
   }
 

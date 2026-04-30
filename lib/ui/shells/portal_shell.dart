@@ -132,76 +132,99 @@ class _PortalHeader extends StatelessWidget {
                 width: compact ? 176 : 292,
                 fit: BoxFit.contain,
               ),
-              const Spacer(),
-              if (showUserControls || showLanguageSelector) ...[
-                IconButton(
-                  tooltip: 'Announcements',
-                  color: const Color(0xFF9EA3A8),
-                  constraints: BoxConstraints.tightFor(
-                    width: compact ? 40 : 48,
-                    height: compact ? 40 : 48,
-                  ),
-                  icon: Icon(Icons.campaign_outlined, size: compact ? 26 : 30),
-                  onPressed: () {},
-                ),
-                SizedBox(width: compact ? 8 : 18),
-              ],
-              if (showUserControls) ...[
-                Flexible(
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.person,
-                        color: Color(0xFF222222),
-                        size: 17,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          userName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                      if (showUserControls || showLanguageSelector) ...[
+                        IconButton(
+                          tooltip: 'Announcements',
+                          color: const Color(0xFF9EA3A8),
+                          constraints: BoxConstraints.tightFor(
+                            width: compact ? 40 : 48,
+                            height: compact ? 40 : 48,
+                          ),
+                          icon: Icon(
+                            Icons.campaign_outlined,
+                            size: compact ? 26 : 30,
+                          ),
+                          onPressed: () {},
+                        ),
+                        SizedBox(width: compact ? 8 : 18),
+                      ],
+                      if (showUserControls) ...[
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: compact ? 190 : 360,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.person,
+                                color: Color(0xFF222222),
+                                size: 17,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  userName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
+                      ],
+                      if (showLanguageSelector) ...[
+                        SizedBox(
+                          width: showUserControls ? (compact ? 12 : 24) : 0,
+                        ),
+                        SizedBox(
+                          width: compact ? 156 : 246,
+                          height: 43,
+                          child: DropdownButtonFormField<String>(
+                            initialValue: language,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 20,
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'English',
+                                child: Text('English'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Uzbek',
+                                child: Text('Uzbek'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Russian',
+                                child: Text('Russian'),
+                              ),
+                            ],
+                            onChanged: onLanguageChanged,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-              ],
-              if (showLanguageSelector) ...[
-                SizedBox(width: showUserControls ? (compact ? 12 : 24) : 0),
-                SizedBox(
-                  width: compact ? 156 : 246,
-                  height: 43,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: language,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                    ),
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'English',
-                        child: Text('English'),
-                      ),
-                      DropdownMenuItem(value: 'Uzbek', child: Text('Uzbek')),
-                      DropdownMenuItem(
-                        value: 'Russian',
-                        child: Text('Russian'),
-                      ),
-                    ],
-                    onChanged: onLanguageChanged,
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         );

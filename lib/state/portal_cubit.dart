@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/compass_models.dart';
 import '../data/compass_repository.dart';
+import '../data/error_messages.dart';
 
 class PortalState {
   const PortalState({this.loading = false, this.catalog, this.error});
@@ -40,7 +41,7 @@ class PortalCubit extends Cubit<PortalState> {
       emit(PortalState(catalog: catalog));
       return catalog;
     } catch (error) {
-      emit(state.copyWith(loading: false, error: error.toString()));
+      emit(state.copyWith(loading: false, error: friendlyErrorMessage(error)));
       rethrow;
     }
   }

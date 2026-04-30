@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/compass_models.dart';
 import '../data/compass_repository.dart';
+import '../data/error_messages.dart';
 import '../ui/exam/exam_models.dart';
 
 class ExamSessionCubitState {
@@ -49,7 +50,7 @@ class ExamSessionCubit extends Cubit<ExamSessionCubitState> {
       emit(ExamSessionCubitState(examStartData: data));
       return data;
     } catch (error) {
-      emit(state.copyWith(loading: false, error: error.toString()));
+      emit(state.copyWith(loading: false, error: friendlyErrorMessage(error)));
       rethrow;
     }
   }

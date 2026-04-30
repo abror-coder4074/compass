@@ -58,6 +58,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/images/compass_app_icon.png
     - assets/images/certiport_logo.png
     - assets/images/ic3_logo.png
     - assets/images/exam_landing_photo.png

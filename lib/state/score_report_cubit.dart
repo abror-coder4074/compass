@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/compass_models.dart';
+import '../data/error_messages.dart';
 
 class ScoreReportState {
   const ScoreReportState({this.loading = false, this.report, this.error});
@@ -35,6 +36,6 @@ class ScoreReportCubit extends Cubit<ScoreReportState> {
   }
 
   void setError(Object error) {
-    emit(state.copyWith(loading: false, error: error.toString()));
+    emit(state.copyWith(loading: false, error: friendlyErrorMessage(error)));
   }
 }
