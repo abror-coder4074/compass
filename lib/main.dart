@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,6 +21,9 @@ const Size _minimumWindowSize = Size(1024, 700);
 const String _lockdownTitle = 'Secure exam is active';
 const String _lockdownMessage =
     'You cannot exit until the exam has been completed or timed out.';
+const String _switchBlockedMessage =
+    'Switching to another application is not allowed while the exam is active.';
+const Duration _lockdownGuardInterval = Duration(milliseconds: 700);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +66,8 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
   bool _examLockdownMode = false;
   bool _enteringSecureExam = false;
   bool _lockdownNoticeVisible = false;
+  bool _enforcingLockdown = false;
+  Timer? _lockdownGuardTimer;
 
   @override
   void initState() {
@@ -70,6 +77,7 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
 
   @override
   void dispose() {
+    _stopLockdownGuard();
     windowManager.removeListener(this);
     super.dispose();
   }
@@ -87,22 +95,119 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
   @override
   void onWindowMinimize() {
     if (_examLockdownMode) {
-      _handleBlockedWindowAttempt();
+      unawaited(_handleBlockedWindowAttempt());
     }
   }
 
   @override
   void onWindowLeaveFullScreen() {
     if (_examLockdownMode) {
-      _handleBlockedWindowAttempt();
+      unawaited(_handleBlockedWindowAttempt());
     }
   }
 
-  Future<void> _handleBlockedWindowAttempt() async {
+  @override
+  void onWindowBlur() {
+    if (_examLockdownMode) {
+      unawaited(_handleBlockedWindowAttempt(message: _switchBlockedMessage));
+    }
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    if (_examLockdownMode) {
+      unawaited(_handleBlockedWindowAttempt());
+    }
+  }
+
+  @override
+  void onWindowRestore() {
+    if (_examLockdownMode) {
+      unawaited(_enforceExamWindowState());
+    }
+  }
+
+  Future<void> _handleBlockedWindowAttempt({String? message}) async {
+    await _enforceExamWindowState();
+    if (_examLockdownMode) {
+      await _showLockdownNotice(message: message);
+    }
+  }
+
+  void _startLockdownGuard() {
+    _lockdownGuardTimer?.cancel();
+    _lockdownGuardTimer = Timer.periodic(_lockdownGuardInterval, (_) {
+      if (_examLockdownMode) {
+        unawaited(_enforceExamWindowState());
+      }
+    });
+  }
+
+  void _stopLockdownGuard() {
+    _lockdownGuardTimer?.cancel();
+    _lockdownGuardTimer = null;
+  }
+
+  Future<void> _enforceExamWindowState() async {
+    if (!_examLockdownMode || _enforcingLockdown) {
+      return;
+    }
+
+    _enforcingLockdown = true;
+    try {
+      await windowManager.show();
+      if (!_examLockdownMode) {
+        return;
+      }
+      if (await windowManager.isMinimized()) {
+        await windowManager.restore();
+      }
+      if (!_examLockdownMode) {
+        return;
+      }
+      if (!await windowManager.isAlwaysOnTop()) {
+        await windowManager.setAlwaysOnTop(true);
+      }
+      if (!_examLockdownMode) {
+        return;
+      }
+      if (!await windowManager.isFullScreen()) {
+        await windowManager.restore();
+        await windowManager.unmaximize();
+        await windowManager.setTitleBarStyle(
+          TitleBarStyle.hidden,
+          windowButtonVisibility: false,
+        );
+        await windowManager.setFullScreen(true);
+      }
+      if (!_examLockdownMode) {
+        return;
+      }
+      if (!await windowManager.isFocused()) {
+        await windowManager.focus();
+      }
+    } finally {
+      _enforcingLockdown = false;
+    }
+  }
+
+  Future<void> _activateExamWindowRestrictions() async {
+    await windowManager.setTitle(_lockdownTitle);
+    await windowManager.setPreventClose(true);
+    await windowManager.setClosable(false);
+    await windowManager.show();
     await windowManager.restore();
+    await windowManager.unmaximize();
+    await windowManager.setTitleBarStyle(
+      TitleBarStyle.hidden,
+      windowButtonVisibility: false,
+    );
+    await windowManager.setResizable(false);
+    await windowManager.setMinimizable(false);
+    await windowManager.setMaximizable(false);
+    await windowManager.setAlwaysOnTop(true);
     await windowManager.setFullScreen(true);
     await windowManager.focus();
-    await _showLockdownNotice();
   }
 
   Future<void> _enterExamLockdownMode() async {
@@ -124,12 +229,8 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
       _examLockdownMode = true;
     });
 
-    await windowManager.setPreventClose(true);
-    await windowManager.setResizable(false);
-    await windowManager.setMinimizable(false);
-    await windowManager.setMaximizable(false);
-    await windowManager.setFullScreen(true);
-    await windowManager.focus();
+    await _activateExamWindowRestrictions();
+    _startLockdownGuard();
 
     if (!mounted) {
       return;
@@ -152,6 +253,9 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
       });
     }
 
+    _stopLockdownGuard();
+    await windowManager.setAlwaysOnTop(false);
+    await windowManager.setClosable(true);
     await windowManager.setFullScreen(false);
     await Future<void>.delayed(const Duration(milliseconds: 120));
     await windowManager.restore();
@@ -163,6 +267,7 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
     await windowManager.setResizable(true);
     await windowManager.setMinimizable(true);
     await windowManager.setMaximizable(true);
+    await windowManager.setTitleBarStyle(TitleBarStyle.normal);
     await windowManager.setTitle('Compass');
     await windowManager.focus();
   }
