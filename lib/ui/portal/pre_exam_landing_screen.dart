@@ -6,6 +6,7 @@ import '../compass_theme.dart';
 class PreExamLandingScreen extends StatelessWidget {
   const PreExamLandingScreen({
     required this.selectedExam,
+    required this.userName,
     required this.onCloseWindow,
     required this.onStartExam,
     this.durationMinutes = 50,
@@ -15,6 +16,7 @@ class PreExamLandingScreen extends StatelessWidget {
   });
 
   final String selectedExam;
+  final String userName;
   final int durationMinutes;
   final int questionCount;
   final int passScore;
@@ -45,6 +47,7 @@ class PreExamLandingScreen extends StatelessWidget {
                 final compact = constraints.maxWidth < 900;
                 final infoPanel = _LandingInfoPanel(
                   selectedExam: selectedExam,
+                  userName: userName,
                   durationMinutes: durationMinutes,
                   questionCount: questionCount,
                   passScore: passScore,
@@ -92,7 +95,7 @@ class PreExamLandingScreen extends StatelessWidget {
   }
 }
 
-class _LandingFooter extends StatelessWidget {
+class _LandingFooter extends StatefulWidget {
   const _LandingFooter({
     required this.onCloseWindow,
     required this.onStartExam,
@@ -100,6 +103,31 @@ class _LandingFooter extends StatelessWidget {
 
   final Future<void> Function() onCloseWindow;
   final Future<void> Function() onStartExam;
+
+  @override
+  State<_LandingFooter> createState() => _LandingFooterState();
+}
+
+class _LandingFooterState extends State<_LandingFooter> {
+  bool _startingExam = false;
+
+  Future<void> _handleStartExam() async {
+    if (_startingExam) {
+      return;
+    }
+    setState(() {
+      _startingExam = true;
+    });
+    try {
+      await widget.onStartExam();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _startingExam = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +145,7 @@ class _LandingFooter extends StatelessWidget {
             offset: const Offset(0, -120),
             onSelected: (value) {
               if (value == 'close') {
-                onCloseWindow();
+                widget.onCloseWindow();
               }
             },
             itemBuilder: (context) => const [
@@ -148,9 +176,7 @@ class _LandingFooter extends StatelessWidget {
             child: CompassPrimaryButton(
               label: 'Start Exam',
               tone: CompassButtonTone.exam,
-              onPressed: () {
-                onStartExam();
-              },
+              onPressed: _startingExam ? null : () async => _handleStartExam(),
             ),
           ),
         ],
@@ -162,12 +188,14 @@ class _LandingFooter extends StatelessWidget {
 class _LandingInfoPanel extends StatelessWidget {
   const _LandingInfoPanel({
     required this.selectedExam,
+    required this.userName,
     required this.durationMinutes,
     required this.questionCount,
     required this.passScore,
   });
 
   final String selectedExam;
+  final String userName;
   final int durationMinutes;
   final int questionCount;
   final int passScore;
@@ -185,7 +213,7 @@ class _LandingInfoPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Welcome, Certiport!',
+                'Welcome, $userName!',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: tight ? 26 : 35,

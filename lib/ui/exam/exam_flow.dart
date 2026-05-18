@@ -280,6 +280,18 @@ class _ExamFlowState extends State<ExamFlow> {
     });
   }
 
+  void _openQuestionFromSummary(int questionIndex) {
+    if (questionIndex < 0 || questionIndex >= _session.totalQuestions) {
+      return;
+    }
+
+    setState(() {
+      _session.currentQuestionIndex = questionIndex;
+      _session.lastVisitedQuestionIndex = questionIndex;
+      _session.stage = ExamFlowStage.question;
+    });
+  }
+
   void _finishExam() {
     _timer?.cancel();
     setState(() {

@@ -94,7 +94,7 @@ class _ScoreReportDocument extends StatelessWidget {
           height: 58,
           color: const Color(0xFF555A5C),
           alignment: Alignment.center,
-          child: Image.asset(
+          child: SvgPicture.asset(
             CompassAssets.certiportLogo,
             width: 150,
             fit: BoxFit.contain,

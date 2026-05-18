@@ -81,7 +81,10 @@ extension _ExamFlowLayout on _ExamFlowState {
         onMatchItemAssigned: _assignMatchItem,
         onMatchTargetCleared: _clearMatchTarget,
       ),
-      ExamFlowStage.summary => ExamSummaryScreen(session: _session),
+      ExamFlowStage.summary => ExamSummaryScreen(
+        session: _session,
+        onQuestionSelected: _openQuestionFromSummary,
+      ),
       ExamFlowStage.feedbackIntro => const ExamFeedbackIntroScreen(),
       ExamFlowStage.feedbackForm => ExamFeedbackFormScreen(
         controller: _feedbackController,
@@ -130,13 +133,12 @@ extension _ExamFlowLayout on _ExamFlowState {
           _buildToolsMenu(),
         ],
         trailingChildren: [
-          CompassSecondaryButton(
-            label: 'Back',
-            tone: CompassButtonTone.exam,
-            onPressed: _session.currentQuestionIndex == 0
-                ? null
-                : _goBackQuestion,
-          ),
+          if (_session.currentQuestionIndex > 0)
+            CompassSecondaryButton(
+              label: 'Back',
+              tone: CompassButtonTone.exam,
+              onPressed: _goBackQuestion,
+            ),
           CompassPrimaryButton(
             label: 'Next',
             tone: CompassButtonTone.exam,

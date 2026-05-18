@@ -40,7 +40,7 @@ class ExamSurveyScreen extends StatelessWidget {
               'Your answers will not affect the exam questions or your score.',
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 19,
+                fontSize: 17,
                 height: 1.32,
                 fontWeight: FontWeight.w400,
               ),
@@ -57,7 +57,7 @@ class ExamSurveyScreen extends StatelessWidget {
                     'Answer Area',
                     style: TextStyle(
                       color: Colors.black,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -186,7 +186,7 @@ class _SurveySectionPanel extends StatelessWidget {
             title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 16,
               height: 1.18,
               fontWeight: FontWeight.w700,
             ),
@@ -219,7 +219,7 @@ class _SurveySectionPanel extends StatelessWidget {
   }
 }
 
-class _SurveyOptionCard extends StatelessWidget {
+class _SurveyOptionCard extends StatefulWidget {
   const _SurveyOptionCard({
     required this.width,
     required this.label,
@@ -233,22 +233,53 @@ class _SurveyOptionCard extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
+  State<_SurveyOptionCard> createState() => _SurveyOptionCardState();
+}
+
+class _SurveyOptionCardState extends State<_SurveyOptionCard> {
+  bool _hovered = false;
+  bool _focused = false;
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final highlighted = widget.selected || _hovered || _focused || _pressed;
+
     return InkWell(
-      onTap: onPressed,
+      mouseCursor: SystemMouseCursors.click,
+      onTap: widget.onPressed,
+      onHighlightChanged: (value) {
+        setState(() {
+          _pressed = value;
+        });
+      },
+      onHover: (value) {
+        setState(() {
+          _hovered = value;
+        });
+      },
+      onFocusChange: (value) {
+        setState(() {
+          _focused = value;
+        });
+      },
+      hoverColor: Colors.transparent,
+      focusColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      splashColor: Colors.transparent,
       child: Container(
-        width: width,
+        width: widget.width,
         constraints: const BoxConstraints(minHeight: 109),
         padding: const EdgeInsets.fromLTRB(11, 12, 11, 10),
         decoration: BoxDecoration(
           color: const Color(0xFFE3E6E6),
           border: Border.all(
-            color: selected
-                ? CompassColors.certiportTealDark
+            color: highlighted
+                ? CompassColors.inputYellow
                 : const Color(0xFFB6BDC1),
-            width: selected ? 3 : 1,
+            width: highlighted ? 2 : 1,
           ),
-          boxShadow: selected
+          boxShadow: widget.selected
               ? const [
                   BoxShadow(
                     color: Color(0x22000000),
@@ -259,10 +290,10 @@ class _SurveyOptionCard extends StatelessWidget {
               : null,
         ),
         child: Text(
-          label,
+          widget.label,
           style: const TextStyle(
             color: Colors.black,
-            fontSize: 19,
+            fontSize: 16,
             height: 1.18,
             fontWeight: FontWeight.w400,
           ),

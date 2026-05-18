@@ -1,13 +1,4 @@
-import 'dart:math';
-
 import '../ui/exam/exam_models.dart';
-
-const int demoScoreMin = 556;
-const int demoScoreMax = 688;
-
-int randomDemoScore() {
-  return demoScoreMin + Random().nextInt(demoScoreMax - demoScoreMin + 1);
-}
 
 class CompassConfig {
   static const supabaseUrl = 'https://mjthfgptkrehpmugjgoj.supabase.co';
@@ -42,6 +33,7 @@ class CompassCandidate {
     required this.email,
     required this.displayName,
     required this.candidateIdentifier,
+    required this.score,
     required this.addressLine1,
     required this.addressLine2,
     required this.city,
@@ -56,6 +48,7 @@ class CompassCandidate {
       email: _string(json['email']),
       displayName: _string(json['display_name']),
       candidateIdentifier: _string(json['candidate_identifier']),
+      score: _int(json['score'], fallback: 700),
       addressLine1: _string(json['address_line1']),
       addressLine2: _string(json['address_line2']),
       city: _string(json['city']),
@@ -69,6 +62,7 @@ class CompassCandidate {
   final String email;
   final String displayName;
   final String candidateIdentifier;
+  final int score;
   final String addressLine1;
   final String addressLine2;
   final String city;

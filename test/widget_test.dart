@@ -131,25 +131,95 @@ void main() {
 
     expect(find.text('Login'), findsWidgets);
     expect(find.text('Close Window'), findsOneWidget);
+    final passwordField = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .firstWhere((field) => field.controller?.text == '@Certiport08');
+    expect(passwordField.obscureText, isTrue);
 
     await _tapButton(tester, 'Login');
 
     expect(find.text('Mailing address'), findsNothing);
     expect(find.text('Accept All Cookies'), findsNothing);
     expect(
-      find.text('Welcome Certiport, let\'s get ready for your exam!'),
+      find.text('Welcome Alex Morgan, let\'s get you ready for your exam!'),
       findsOneWidget,
+    );
+
+    final examGroupToggle = find.byKey(
+      const ValueKey('readiness-group-toggle'),
+    );
+    await tester.ensureVisible(examGroupToggle);
+    await tester.tap(examGroupToggle);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Select Exam Group'), findsOneWidget);
+    expect(find.text('Enter exam group'), findsOneWidget);
+    expect(find.byKey(const ValueKey('readiness-group-input')), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('readiness-group-select')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('readiness-group-select-menu')),
+      findsOneWidget,
+    );
+
+    final disabledNext = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Next'),
+    );
+    expect(disabledNext.onPressed, isNull);
+  });
+
+  testWidgets('language menu opens below selector and updates selection', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHome(tester);
+
+    final selector = find.byKey(const ValueKey('portal-language-selector'));
+    expect(find.byKey(const ValueKey('portal-language-menu')), findsNothing);
+
+    await tester.tap(selector);
+    await tester.pumpAndSettle();
+
+    final menu = find.byKey(const ValueKey('portal-language-menu'));
+    expect(menu, findsOneWidget);
+    expect(
+      tester.getTopLeft(menu).dy,
+      greaterThan(tester.getBottomLeft(selector).dy),
+    );
+
+    await _tapText(tester, 'Arabic');
+
+    expect(find.byKey(const ValueKey('portal-language-menu')), findsNothing);
+    expect(find.text('Arabic'), findsOneWidget);
+  });
+
+  testWidgets('failed login shows invalid login alert', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHome(tester, repository: _RejectingLoginRepository());
+
+    expect(find.byKey(const ValueKey('login-invalid-alert')), findsNothing);
+
+    await _tapButton(tester, 'Login');
+
+    expect(find.byKey(const ValueKey('login-invalid-alert')), findsOneWidget);
+    expect(find.text('Invalid login.'), findsOneWidget);
+    expect(
+      find.text('Welcome Alex Morgan, let\'s get you ready for your exam!'),
+      findsNothing,
     );
   });
 
-  testWidgets('candidate portal reaches NDA and gates Next until accepted', (
+  testWidgets('candidate portal skips NDA after selecting exam', (
     WidgetTester tester,
   ) async {
     await _pumpHome(tester);
     await _tapButton(tester, 'Login');
 
     expect(
-      find.text('Welcome Certiport, let\'s get ready for your exam!'),
+      find.text('Welcome Alex Morgan, let\'s get you ready for your exam!'),
       findsOneWidget,
     );
     expect(
@@ -162,6 +232,21 @@ void main() {
     await tester.ensureVisible(voucherToggle);
     await tester.tap(voucherToggle);
     await tester.pumpAndSettle();
+
+    final voucherSelect = find.byKey(
+      const ValueKey('readiness-voucher-select'),
+    );
+    await tester.ensureVisible(voucherSelect);
+    await tester.pumpAndSettle();
+    await tester.tap(voucherSelect);
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('readiness-voucher-select-menu')),
+      findsOneWidget,
+    );
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
     final voucherInput = find.byKey(const ValueKey('readiness-voucher-input'));
     await tester.ensureVisible(voucherInput);
     await tester.enterText(voucherInput, '3075-hz25-5gvy-3x5p');
@@ -177,20 +262,11 @@ void main() {
 
     expect(
       find.text('Non-Disclosure Agreement and Terms of Use'),
-      findsOneWidget,
+      findsNothing,
     );
-
-    final disabledNext = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Next'),
-    );
-    expect(disabledNext.onPressed, isNull);
-
-    await _tapText(tester, 'Yes, I accept');
-
-    final enabledNext = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Next'),
-    );
-    expect(enabledNext.onPressed, isNotNull);
+    expect(find.text('Verify & Unlock Exam'), findsOneWidget);
+    expect(find.text('Alex\nMorgan'), findsOneWidget);
+    expect(find.text('Edu Action LLC.'), findsOneWidget);
   });
 
   testWidgets('voucher remove clears exam select and payment state', (
@@ -221,8 +297,6 @@ void main() {
     expect(find.text('3075-HZ25-5GVY-3X5P'), findsNothing);
 
     await _tapElevatedButton(tester, 'Select exam');
-    await _tapText(tester, 'Yes, I accept');
-    await _tapButton(tester, 'Next');
 
     expect(find.text('No voucher'), findsOneWidget);
     expect(find.text('3075-HZ25-5GVY-3X5P'), findsNothing);
@@ -232,37 +306,75 @@ void main() {
     WidgetTester tester,
   ) async {
     var startExamCalls = 0;
+    final repository = _CapturingUnlockRepository();
     await _pumpHome(
       tester,
+      repository: repository,
       onStartExam: () async {
         startExamCalls += 1;
       },
     );
 
-    await _advanceToNda(tester);
-    await _tapText(tester, 'Yes, I accept');
-    await _tapButton(tester, 'Next');
+    await _advanceToVerifyUnlock(tester);
 
     expect(find.text('Verify & Unlock Exam'), findsOneWidget);
     expect(find.text('Edu Action LLC.'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).at(0), 'proctor.demo');
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField).at(1), 'Compass2026');
+
+    final disabledContinueButton = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Continue'),
+    );
+    expect(disabledContinueButton.onPressed, isNull);
+
+    await tester.enterText(find.byType(TextFormField).at(1), 'wrong-password');
     await tester.pumpAndSettle();
+
+    final enabledContinueButton = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Continue'),
+    );
+    expect(enabledContinueButton.onPressed, isNotNull);
+
     await _tapButton(tester, 'Continue');
 
+    expect(repository.lastProctorUsername, 'proctor.demo');
+    expect(repository.lastProctorPassword, 'Compass2026');
     expect(find.text('IC3 GS6 Level 1'), findsOneWidget);
     expect(find.text('VBScript'), findsOneWidget);
 
-    await _tapButton(tester, 'Next');
+    await _tapButtonWithoutSettling(tester, 'Next');
+    await tester.pump();
 
-    expect(find.text('Welcome, Certiport!'), findsOneWidget);
+    expect(find.text('Welcome, Alex Morgan!'), findsNothing);
+    expect(find.text('Start Exam'), findsNothing);
+
+    await _pumpPreExamBlankDelay(tester);
+    expect(find.text('Welcome, Alex Morgan!'), findsOneWidget);
     expect(find.text('Start Exam'), findsOneWidget);
 
     await _tapButton(tester, 'Start Exam');
 
     expect(startExamCalls, 1);
+  });
+
+  testWidgets('invalid proctor credentials update verify notification', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHome(tester, repository: _RejectingUnlockRepository());
+    await _advanceToVerifyUnlock(tester);
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'proctor.demo');
+    await tester.enterText(find.byType(TextFormField).at(1), 'wrong-password');
+    await tester.pumpAndSettle();
+
+    await _tapButton(tester, 'Continue');
+
+    expect(
+      find.text('Candidate, please verify the proctor username and password.'),
+      findsOneWidget,
+    );
+    expect(find.text('Invalid proctor credentials.'), findsNothing);
   });
 
   testWidgets('survey transitions to tutorial and timed questions', (
@@ -319,6 +431,25 @@ void main() {
     expect(unansweredCount.data, '44');
     expect(reviewCount.data, '1');
     expect(feedbackCount.data, '1');
+  });
+
+  testWidgets('exam summary question row opens the selected question', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHome(tester, examLockdownMode: true);
+
+    await _tapButton(tester, 'Next');
+    await _tapButton(tester, 'Start Exam');
+    await _tapText(tester, 'Go To Summary');
+    await _tapByKey(tester, const ValueKey('summary-row-2-content'));
+
+    expect(find.text('Question 2 of 45'), findsOneWidget);
+    expect(
+      find.text(
+        'A student needs to organize project files for three different subjects. Which approach is best?',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('matching, ordering, and checkbox questions update summary', (
@@ -489,7 +620,7 @@ void main() {
     expect(find.text('Exam Score Summary and Pathways'), findsOneWidget);
   });
 
-  testWidgets('score summary updates email, opens pathways, and full report', (
+  testWidgets('score summary buttons stay on summary page', (
     WidgetTester tester,
   ) async {
     await _pumpHome(tester, examLockdownMode: true);
@@ -500,24 +631,19 @@ void main() {
     await _tapButton(tester, 'Exit Exam');
 
     await _tapButton(tester, 'Update Email Address');
-    await tester.enterText(
+    expect(
       find.byKey(const ValueKey('score-summary-email-input')),
-      'alex.updated@example.com',
+      findsNothing,
     );
-    await tester.pumpAndSettle();
-    await _tapButton(tester, 'Save');
-
-    expect(find.text('alex.updated@example.com'), findsOneWidget);
+    expect(find.text('Exam Score Summary and Pathways'), findsOneWidget);
 
     await _tapButton(tester, 'View Pathways Details');
     expect(find.text('IC3 Digital Literacy GS6 Master'), findsWidgets);
     await _tapButton(tester, 'Close');
 
     await _tapButton(tester, 'View Full Score Report');
-    expect(find.text('EXAM SCORE REPORT'), findsOneWidget);
-    expect(find.text('CANDIDATE'), findsOneWidget);
-    expect(find.text('FINAL SCORE'), findsOneWidget);
-    expect(find.text('Your Score'), findsWidgets);
+    expect(find.text('Exam Score Summary and Pathways'), findsOneWidget);
+    expect(find.text('EXAM SCORE REPORT'), findsNothing);
   });
 
   testWidgets('tools close window delegates to blocked exit callback', (
@@ -543,26 +669,27 @@ void main() {
 Future<void> _pumpHome(
   WidgetTester tester, {
   bool examLockdownMode = false,
+  CompassRepository? repository,
   Future<void> Function()? onStartExam,
   Future<void> Function()? onExitSecureWorkspace,
   Future<void> Function({String? title, String? message})? onBlockedExit,
   ExamTimerConfig examTimerConfig = const ExamTimerConfig(),
 }) async {
   var lockdown = examLockdownMode;
-  final repository = LocalCompassRepository();
+  final compassRepository = repository ?? LocalCompassRepository();
 
   await tester.pumpWidget(
     MaterialApp(
       theme: buildCompassTheme(),
       home: MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<CompassRepository>.value(value: repository),
+          RepositoryProvider<CompassRepository>.value(value: compassRepository),
         ],
         child: MultiBlocProvider(
           providers: [
-            BlocProvider(create: (_) => AuthCubit(repository)),
-            BlocProvider(create: (_) => PortalCubit(repository)),
-            BlocProvider(create: (_) => ExamSessionCubit(repository)),
+            BlocProvider(create: (_) => AuthCubit(compassRepository)),
+            BlocProvider(create: (_) => PortalCubit(compassRepository)),
+            BlocProvider(create: (_) => ExamSessionCubit(compassRepository)),
             BlocProvider(create: (_) => ScoreReportCubit()),
           ],
           child: StatefulBuilder(
@@ -589,10 +716,56 @@ Future<void> _pumpHome(
   await tester.pumpAndSettle();
 }
 
-Future<void> _advanceToNda(WidgetTester tester) async {
+class _RejectingLoginRepository extends LocalCompassRepository {
+  @override
+  Future<LoginResult> loginCandidate({
+    required String username,
+    required String password,
+  }) async {
+    throw Exception('bad credentials');
+  }
+}
+
+class _CapturingUnlockRepository extends LocalCompassRepository {
+  String? lastProctorUsername;
+  String? lastProctorPassword;
+
+  @override
+  Future<bool> unlockExam({
+    required String sessionId,
+    required String proctorUsername,
+    required String proctorPassword,
+  }) async {
+    lastProctorUsername = proctorUsername;
+    lastProctorPassword = proctorPassword;
+    return proctorUsername.trim().isNotEmpty &&
+        proctorPassword == 'Compass2026';
+  }
+}
+
+class _RejectingUnlockRepository extends LocalCompassRepository {
+  @override
+  Future<bool> unlockExam({
+    required String sessionId,
+    required String proctorUsername,
+    required String proctorPassword,
+  }) async {
+    return false;
+  }
+}
+
+Future<void> _advanceToVerifyUnlock(WidgetTester tester) async {
   await _tapButton(tester, 'Login');
+  await _enableReadinessVoucher(tester);
   await _tapButton(tester, 'Next');
   await _tapElevatedButton(tester, 'Select exam');
+}
+
+Future<void> _enableReadinessVoucher(WidgetTester tester) async {
+  final voucherToggle = find.byKey(const ValueKey('readiness-voucher-toggle'));
+  await tester.ensureVisible(voucherToggle);
+  await tester.tap(voucherToggle);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _advanceToFeedbackIntro(WidgetTester tester) async {
@@ -656,6 +829,31 @@ Future<void> _tapButton(WidgetTester tester, String text) async {
   }
 
   await _tapText(tester, text);
+}
+
+Future<void> _tapButtonWithoutSettling(WidgetTester tester, String text) async {
+  final elevated = find.widgetWithText(ElevatedButton, text);
+  if (elevated.evaluate().isNotEmpty) {
+    await tester.ensureVisible(elevated.first);
+    await tester.tap(elevated.first);
+    return;
+  }
+
+  final outlined = find.widgetWithText(OutlinedButton, text);
+  if (outlined.evaluate().isNotEmpty) {
+    await tester.ensureVisible(outlined.first);
+    await tester.tap(outlined.first);
+    return;
+  }
+
+  final finder = find.text(text);
+  await tester.ensureVisible(finder.first);
+  await tester.tap(finder.first);
+}
+
+Future<void> _pumpPreExamBlankDelay(WidgetTester tester) async {
+  await tester.pump(const Duration(seconds: 12));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _tapElevatedButton(WidgetTester tester, String text) async {

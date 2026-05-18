@@ -12,46 +12,174 @@ import 'state/auth_cubit.dart';
 import 'state/exam_session_cubit.dart';
 import 'state/portal_cubit.dart';
 import 'state/score_report_cubit.dart';
+import 'ui/app_zoom.dart';
 import 'ui/compass_components.dart';
 import 'ui/compass_home.dart';
 import 'ui/compass_theme.dart';
+import 'ui/startup_splash.dart';
 
 const Size _normalWindowSize = Size(1280, 800);
 const Size _minimumWindowSize = Size(1024, 700);
+const Size _startupSplashWindowSize = Size(640, 460);
+const Color _startupTransparentBackground = Color(0x00000000);
 const String _lockdownTitle = 'Secure exam is active';
 const String _lockdownMessage =
     'You cannot exit until the exam has been completed or timed out.';
 const String _switchBlockedMessage =
     'Switching to another application is not allowed while the exam is active.';
 const Duration _lockdownGuardInterval = Duration(milliseconds: 700);
+const Duration _minimumStartupSplashDuration = Duration(milliseconds: 1400);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: CompassConfig.supabaseUrl,
-    anonKey: CompassConfig.supabasePublishableKey,
-  );
   await windowManager.ensureInitialized();
 
   const windowOptions = WindowOptions(
-    size: _normalWindowSize,
-    minimumSize: _minimumWindowSize,
+    size: _startupSplashWindowSize,
     center: true,
+    alwaysOnTop: true,
+    backgroundColor: _startupTransparentBackground,
+    skipTaskbar: true,
     title: 'Compass',
-    titleBarStyle: TitleBarStyle.normal,
+    titleBarStyle: TitleBarStyle.hidden,
+    windowButtonVisibility: false,
   );
 
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.setTitle('Compass');
-    await windowManager.setResizable(true);
-    await windowManager.setMinimizable(true);
-    await windowManager.setMaximizable(true);
-    await windowManager.setPreventClose(false);
-    await windowManager.show();
-    await windowManager.focus();
-  });
+  await windowManager.waitUntilReadyToShow(windowOptions);
+  await windowManager.setTitleBarStyle(
+    TitleBarStyle.hidden,
+    windowButtonVisibility: false,
+  );
+  await windowManager.setBackgroundColor(_startupTransparentBackground);
+  await windowManager.setHasShadow(false);
+  await windowManager.setResizable(false);
+  await windowManager.setMinimizable(false);
+  await windowManager.setMaximizable(false);
+  await windowManager.setPreventClose(false);
+  await windowManager.show();
+  await windowManager.focus();
 
-  runApp(const CompassApp());
+  runApp(const CompassBootstrapApp());
+}
+
+Future<void> _initializeCompassServices() async {
+  await Future.wait<void>([
+    Supabase.initialize(
+      url: CompassConfig.supabaseUrl,
+      anonKey: CompassConfig.supabasePublishableKey,
+    ),
+    Future<void>.delayed(_minimumStartupSplashDuration),
+  ]);
+}
+
+Future<void> _showMainCompassWindow() async {
+  await windowManager.setAlwaysOnTop(false);
+  await windowManager.setSkipTaskbar(false);
+  await windowManager.setHasShadow(true);
+  await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+  await windowManager.setBackgroundColor(Colors.white);
+  await windowManager.setMinimumSize(_minimumWindowSize);
+  await windowManager.setSize(_normalWindowSize);
+  await windowManager.center();
+  await windowManager.setTitle('Compass');
+  await windowManager.setResizable(true);
+  await windowManager.setMinimizable(true);
+  await windowManager.setMaximizable(true);
+  await windowManager.setOpacity(1);
+  await windowManager.show();
+  await windowManager.focus();
+}
+
+class CompassBootstrapApp extends StatefulWidget {
+  const CompassBootstrapApp({super.key});
+
+  @override
+  State<CompassBootstrapApp> createState() => _CompassBootstrapAppState();
+}
+
+class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
+  Object? _startupError;
+  bool _startupComplete = false;
+  bool _openingMainWindow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_startApp());
+  }
+
+  void _retryStartup() {
+    setState(() {
+      _startupComplete = false;
+      _startupError = null;
+    });
+    unawaited(_startApp());
+  }
+
+  Future<void> _startApp() async {
+    try {
+      await _initializeCompassServices();
+      if (!mounted) {
+        return;
+      }
+
+      await windowManager.setOpacity(0);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _startupComplete = true;
+        _startupError = null;
+      });
+
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return;
+      }
+      await _openMainWindow();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _startupComplete = false;
+        _startupError = error;
+      });
+      await windowManager.setOpacity(1);
+      await windowManager.show();
+    }
+  }
+
+  Future<void> _openMainWindow() async {
+    if (_openingMainWindow) {
+      return;
+    }
+
+    _openingMainWindow = true;
+    try {
+      await _showMainCompassWindow();
+    } finally {
+      _openingMainWindow = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final startupError = _startupError;
+    if (startupError != null) {
+      return CompassStartupErrorApp(
+        error: startupError,
+        onRetry: _retryStartup,
+      );
+    }
+
+    if (!_startupComplete) {
+      return const CompassStartupSplashApp();
+    }
+
+    return const CompassApp();
+  }
 }
 
 class CompassApp extends StatefulWidget {
@@ -174,10 +302,6 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
       if (!await windowManager.isFullScreen()) {
         await windowManager.restore();
         await windowManager.unmaximize();
-        await windowManager.setTitleBarStyle(
-          TitleBarStyle.hidden,
-          windowButtonVisibility: false,
-        );
         await windowManager.setFullScreen(true);
       }
       if (!_examLockdownMode) {
@@ -194,7 +318,6 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
   Future<void> _activateExamWindowRestrictions() async {
     await windowManager.setTitle(_lockdownTitle);
     await windowManager.setPreventClose(true);
-    await windowManager.setClosable(false);
     await windowManager.show();
     await windowManager.restore();
     await windowManager.unmaximize();
@@ -202,6 +325,7 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
       TitleBarStyle.hidden,
       windowButtonVisibility: false,
     );
+    await windowManager.setClosable(false);
     await windowManager.setResizable(false);
     await windowManager.setMinimizable(false);
     await windowManager.setMaximizable(false);
@@ -333,6 +457,9 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
       debugShowCheckedModeBanner: false,
       title: 'Compass',
       theme: buildCompassTheme(),
+      builder: (context, child) {
+        return CompassZoomController(child: child ?? const SizedBox.shrink());
+      },
       home: MultiRepositoryProvider(
         providers: [
           RepositoryProvider<CompassRepository>.value(value: _repository),

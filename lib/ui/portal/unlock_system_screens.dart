@@ -12,6 +12,7 @@ class VerifyUnlockScreen extends StatelessWidget {
     required this.proctorUsernameController,
     required this.proctorPasswordController,
     required this.canContinue,
+    required this.noticeMessage,
     required this.onProctorChanged,
     required this.onPrevious,
     required this.onContinue,
@@ -28,6 +29,7 @@ class VerifyUnlockScreen extends StatelessWidget {
   final TextEditingController proctorUsernameController;
   final TextEditingController proctorPasswordController;
   final bool canContinue;
+  final String noticeMessage;
   final ValueChanged<String> onProctorChanged;
   final VoidCallback onPrevious;
   final VoidCallback onContinue;
@@ -52,7 +54,7 @@ class VerifyUnlockScreen extends StatelessWidget {
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w400),
           ),
           const SizedBox(height: 16),
-          const _VerifyNotice(),
+          _VerifyNotice(message: noticeMessage),
           const SizedBox(height: 24),
           _CandidateExamInformation(
             examTitle: examTitle,
@@ -94,8 +96,37 @@ String _shortExamTitle(String selectedExam) {
   return selectedExam;
 }
 
+String _twoLineCandidateName(String candidateName) {
+  final lines = candidateName
+      .trim()
+      .split(RegExp(r'\s*\n\s*'))
+      .where((line) => line.isNotEmpty)
+      .toList();
+
+  if (lines.length >= 2) {
+    return '${lines.first}\n${lines.skip(1).join(' ')}';
+  }
+
+  final parts = candidateName
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+
+  if (parts.isEmpty) {
+    return '\n ';
+  }
+  if (parts.length == 1) {
+    return '${parts.single}\n ';
+  }
+
+  return '${parts.first}\n${parts.skip(1).join(' ')}';
+}
+
 class _VerifyNotice extends StatelessWidget {
-  const _VerifyNotice();
+  const _VerifyNotice({required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -132,10 +163,13 @@ class _VerifyNotice extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Candidate, please verify that the following information is correct.',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                message,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(width: 22),
@@ -202,7 +236,9 @@ class _CandidateExamInformation extends StatelessWidget {
                       Expanded(
                         flex: 23,
                         child: Text(
-                          candidateName,
+                          _twoLineCandidateName(candidateName),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 23,
@@ -426,6 +462,10 @@ class _ProctorField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentPadding = obscureText
+        ? const EdgeInsets.fromLTRB(9, 4, 9, 8)
+        : const EdgeInsets.symmetric(horizontal: 9, vertical: 8);
+
     return SizedBox(
       width: 618,
       child: Column(
@@ -440,34 +480,34 @@ class _ProctorField extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Container(
+          SizedBox(
             height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFCFCFCF)),
-            ),
             child: TextFormField(
               controller: controller,
               obscureText: obscureText,
-              obscuringCharacter: '*',
               onChanged: onChanged,
+              textAlignVertical: TextAlignVertical.center,
               cursorColor: const Color(0xFF222222),
               cursorHeight: 18,
               style: const TextStyle(
                 color: Color(0xFF222222),
                 fontSize: 16,
-                height: 1.0,
+                height: 1.25,
               ),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                filled: false,
-                isCollapsed: true,
-                contentPadding: EdgeInsets.fromLTRB(9, 11, 9, 10),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                isDense: true,
+                contentPadding: contentPadding,
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.zero,
+                  borderSide: BorderSide(color: CompassColors.fieldBorder),
+                ),
+                enabledBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.zero,
+                  borderSide: BorderSide(color: CompassColors.fieldBorder),
+                ),
+                focusedBorder: const CompassFocusedInputBorder(),
               ),
             ),
           ),
@@ -582,16 +622,21 @@ class _SystemCheckActions extends StatelessWidget {
           height: 42,
           child: OutlinedButton(
             onPressed: onPrevious,
-            style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0xFFF7F7F7),
-              foregroundColor: const Color(0xFF333333),
-              padding: EdgeInsets.zero,
-              side: const BorderSide(color: Color(0xFFCFCFCF)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(2),
-              ),
-              textStyle: const TextStyle(fontSize: 14),
-            ),
+            style:
+                OutlinedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF7F7F7),
+                  foregroundColor: const Color(0xFF333333),
+                  padding: EdgeInsets.zero,
+                  side: const BorderSide(color: Color(0xFFCFCFCF)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  textStyle: const TextStyle(fontSize: 14),
+                ).copyWith(
+                  side: CompassControlStates.hoverSide(
+                    const BorderSide(color: Color(0xFFCFCFCF)),
+                  ),
+                ),
             child: const Text('Previous'),
           ),
         ),
@@ -601,20 +646,31 @@ class _SystemCheckActions extends StatelessWidget {
           height: 48,
           child: ElevatedButton(
             onPressed: onNext,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CompassColors.certiportTeal,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: EdgeInsets.zero,
-              side: const BorderSide(color: Color(0xFFFFA000), width: 3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            style:
+                ElevatedButton.styleFrom(
+                  backgroundColor: CompassColors.certiportTeal,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: EdgeInsets.zero,
+                  side: const BorderSide(
+                    color: CompassColors.inputYellow,
+                    width: 3,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ).copyWith(
+                  side: CompassControlStates.hoverSide(
+                    const BorderSide(
+                      color: CompassColors.inputYellow,
+                      width: 3,
+                    ),
+                  ),
+                ),
             child: const Text('Next'),
           ),
         ),

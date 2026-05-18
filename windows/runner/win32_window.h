@@ -90,6 +90,14 @@ class Win32Window {
   // Update the window frame's theme to match the system theme.
   static void UpdateTheme(HWND const window);
 
+  // Applies the native startup splash window behavior before Dart code has a
+  // chance to configure window_manager.
+  static void ConfigureStartupSplashWindow(HWND const window);
+
+  // Removes the native startup splash guard once the Dart app switches to the
+  // regular Compass window size.
+  void DisableStartupSplashStyle(HWND const window);
+
   bool quit_on_close_ = false;
 
   // window handle for top level window.
@@ -97,6 +105,8 @@ class Win32Window {
 
   // window handle for hosted content.
   HWND child_content_ = nullptr;
+
+  bool startup_splash_style_ = true;
 };
 
 #endif  // RUNNER_WIN32_WINDOW_H_

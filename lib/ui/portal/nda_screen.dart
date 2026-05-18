@@ -260,6 +260,7 @@ class _NdaRadioOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      mouseCursor: SystemMouseCursors.click,
       onTap: () => onChanged(value),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -283,16 +284,17 @@ class _NdaPreviousButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const baseSide = BorderSide(color: Color(0xFFBFC6CA));
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(78, 38),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         foregroundColor: CompassColors.text,
-        side: const BorderSide(color: Color(0xFFBFC6CA)),
+        side: baseSide,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
-      ),
+      ).copyWith(side: CompassControlStates.hoverSide(baseSide)),
       child: const Text('Previous'),
     );
   }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../data/error_messages.dart';
+import '../ui/app_zoom.dart';
 import '../ui/compass_theme.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
@@ -18,6 +19,9 @@ class AdminApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Compass Admin',
       theme: buildCompassTheme(),
+      builder: (context, child) {
+        return CompassZoomController(child: child ?? const SizedBox.shrink());
+      },
       home: AdminPanelHome(repository: repository),
     );
   }
@@ -740,10 +744,19 @@ class _AdminRecordFormState extends State<AdminRecordForm> {
       AdminFieldKind.select => _buildSelectField(field),
       AdminFieldKind.text => TextFormField(
         controller: _controllers[field.key],
+        obscureText: _isPasswordField(field),
+        obscuringCharacter: '*',
+        enableSuggestions: !_isPasswordField(field),
+        autocorrect: !_isPasswordField(field),
         decoration: InputDecoration(labelText: field.label),
         validator: (value) => _validateText(field, value),
       ),
     };
+  }
+
+  bool _isPasswordField(AdminFieldConfig field) {
+    return field.key.toLowerCase().contains('password') ||
+        field.label.toLowerCase().contains('password');
   }
 
   Widget _buildRelationField(AdminFieldConfig field) {
@@ -825,6 +838,9 @@ class _AdminRecordFormState extends State<AdminRecordForm> {
     }
     if (field.key == 'percent_complete' && (parsed < 0 || parsed > 100)) {
       return 'Use 0 to 100';
+    }
+    if (field.key == 'score' && (parsed < 0 || parsed > 1000)) {
+      return 'Use 0 to 1000';
     }
     if (_requiresPositiveInteger(field.key) && parsed <= 0) {
       return 'Must be greater than 0';

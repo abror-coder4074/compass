@@ -139,13 +139,7 @@ class ExamFeedbackFormScreen extends StatelessWidget {
                           borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: Color(0xFF9A9A9A)),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(
-                            color: CompassColors.examNavy,
-                            width: 1.5,
-                          ),
-                        ),
+                        focusedBorder: CompassFocusedInputBorder(),
                       ),
                       style: const TextStyle(fontSize: 15, height: 1.4),
                     ),

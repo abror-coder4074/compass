@@ -158,6 +158,7 @@ const editableAdminSections = <AdminSectionConfig>[
       'username',
       'email',
       'candidate_identifier',
+      'score',
       'test_center_id',
     ],
     fields: [
@@ -181,6 +182,13 @@ const editableAdminSections = <AdminSectionConfig>[
         key: 'candidate_identifier',
         label: 'Candidate Identifier',
         required: true,
+      ),
+      AdminFieldConfig(
+        key: 'score',
+        label: 'Score',
+        kind: AdminFieldKind.integer,
+        required: true,
+        defaultValue: 700,
       ),
       AdminFieldConfig(key: 'address_line1', label: 'Address Line 1'),
       AdminFieldConfig(key: 'address_line2', label: 'Address Line 2'),

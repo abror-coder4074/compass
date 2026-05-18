@@ -18,6 +18,7 @@ class LocalCompassRepository implements CompassRepository {
     email: 'alex.morgan@example.com',
     displayName: 'Alex Morgan',
     candidateIdentifier: 'CP-842916',
+    score: 700,
     addressLine1: '41 Amir Temur Street',
     addressLine2: 'Office 1205',
     city: 'Tashkent',
@@ -225,7 +226,7 @@ class LocalCompassRepository implements CompassRepository {
 
   @override
   Future<ScoreReportData> finishExam({required String sessionId}) async {
-    final candidateScore = randomDemoScore();
+    final candidateScore = _candidate.score;
     return ScoreReportData(
       sessionId: 'local-session',
       requiredScore: 700,
@@ -264,6 +265,7 @@ class LocalCompassRepository implements CompassRepository {
       email: email,
       displayName: _candidate.displayName,
       candidateIdentifier: _candidate.candidateIdentifier,
+      score: _candidate.score,
       addressLine1: _candidate.addressLine1,
       addressLine2: _candidate.addressLine2,
       city: _candidate.city,

@@ -27,7 +27,8 @@ class LockdownShell extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Positioned.fill(child: examLockdownMode ? examChild : portalChild),
-          if (enteringSecureExam) const EnteringSecureExamOverlay(),
+          if (enteringSecureExam)
+            const Positioned.fill(child: EnteringSecureExamOverlay()),
         ],
       ),
     );
@@ -39,7 +40,8 @@ class EnteringSecureExamOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
+    return Material(
+      type: MaterialType.transparency,
       child: AbsorbPointer(
         child: DecoratedBox(
           decoration: BoxDecoration(

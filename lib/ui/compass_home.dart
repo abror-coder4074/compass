@@ -14,6 +14,13 @@ import 'exam/exam_flow.dart';
 import 'exam/exam_models.dart';
 import 'portal_flow.dart';
 
+const String _proctorUnlockPassword = 'Compass2026';
+const String _verifyUnlockDefaultNotice =
+    'Candidate, please verify that the following information is correct.';
+const String _verifyUnlockInvalidProctorNotice =
+    'Candidate, please verify the proctor username and password.';
+const Duration _preExamLandingBlankDelay = Duration(seconds: 12);
+
 class CompassHome extends StatefulWidget {
   const CompassHome({
     required this.examLockdownMode,
@@ -43,6 +50,7 @@ class _CompassHomeState extends State<CompassHome> {
     text: 'pochta@gmail.com',
   );
   final _loginPasswordController = TextEditingController(text: '@Certiport08');
+  final _examGroupController = TextEditingController();
   final _voucherController = TextEditingController();
   final _examSearchController = TextEditingController();
   final _proctorUsernameController = TextEditingController();
@@ -52,13 +60,16 @@ class _CompassHomeState extends State<CompassHome> {
   PortalFlowStep _portalStep = PortalFlowStep.login;
   bool _hasExamGroup = false;
   bool _hasVoucher = false;
+  String _assignedExamGroup = 'Select';
   String _assignedVoucher = 'Select';
   String _activeExamTab = 'search';
   String _selectedProgram = 'All programs';
   String _selectedExam = 'IC3 Digital Literacy GS6 Level 1';
   String _candidateEmail = 'alex.morgan@example.com';
-  String _agreement = 'no';
   int _examSessionSeed = 0;
+  bool _showLoginError = false;
+  String? _verifyUnlockNoticeMessage;
+  Timer? _preExamLandingTimer;
   PortalCatalog? _catalog;
   LoginResult? _loginResult;
   ExamStartData? _examStartData;
@@ -80,6 +91,14 @@ class _CompassHomeState extends State<CompassHome> {
       }
     }
     return exams.isEmpty ? null : exams.first;
+  }
+
+  String get _selectedExamDurationText {
+    final durationMinutes = _selectedExamData?.durationMinutes ?? 50;
+    final hours = durationMinutes ~/ 60;
+    final minutes = durationMinutes % 60;
+    return '${hours.toString().padLeft(2, '0')}:'
+        '${minutes.toString().padLeft(2, '0')}:00';
   }
 
   Map<String, String> get _programOptions {
@@ -123,20 +142,6 @@ class _CompassHomeState extends State<CompassHome> {
     return [for (final check in checks) check.label];
   }
 
-  String? get _ndaContent {
-    final examId = _selectedExamData?.id;
-    if (examId == null) {
-      return null;
-    }
-    final agreements = _catalog?.ndaAgreements ?? const <NdaAgreementData>[];
-    for (final agreement in agreements) {
-      if (agreement.examId == examId) {
-        return agreement.content;
-      }
-    }
-    return null;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -145,8 +150,10 @@ class _CompassHomeState extends State<CompassHome> {
 
   @override
   void dispose() {
+    _preExamLandingTimer?.cancel();
     _loginUsernameController.dispose();
     _loginPasswordController.dispose();
+    _examGroupController.dispose();
     _voucherController.dispose();
     _examSearchController.dispose();
     _proctorUsernameController.dispose();
@@ -155,8 +162,24 @@ class _CompassHomeState extends State<CompassHome> {
   }
 
   void _goTo(PortalFlowStep step) {
+    _preExamLandingTimer?.cancel();
     setState(() {
       _portalStep = step;
+    });
+  }
+
+  void _showPreExamBlankBeforeLanding() {
+    _preExamLandingTimer?.cancel();
+    setState(() {
+      _portalStep = PortalFlowStep.preExamBlank;
+    });
+    _preExamLandingTimer = Timer(_preExamLandingBlankDelay, () {
+      if (!mounted || _portalStep != PortalFlowStep.preExamBlank) {
+        return;
+      }
+      setState(() {
+        _portalStep = PortalFlowStep.preExamLanding;
+      });
     });
   }
 
@@ -180,14 +203,15 @@ class _CompassHomeState extends State<CompassHome> {
   }
 
   void _goToPreviousPortalStep() {
+    _preExamLandingTimer?.cancel();
     setState(() {
       _portalStep = switch (_portalStep) {
         PortalFlowStep.login => PortalFlowStep.login,
         PortalFlowStep.readiness => PortalFlowStep.login,
         PortalFlowStep.examSelect => PortalFlowStep.readiness,
-        PortalFlowStep.nda => PortalFlowStep.examSelect,
-        PortalFlowStep.verifyUnlock => PortalFlowStep.nda,
+        PortalFlowStep.verifyUnlock => PortalFlowStep.examSelect,
         PortalFlowStep.systemCheck => PortalFlowStep.verifyUnlock,
+        PortalFlowStep.preExamBlank => PortalFlowStep.systemCheck,
         PortalFlowStep.preExamLanding => PortalFlowStep.systemCheck,
         PortalFlowStep.scoreSummary => PortalFlowStep.preExamLanding,
         PortalFlowStep.fullScoreReport => PortalFlowStep.scoreSummary,
@@ -262,6 +286,7 @@ class _CompassHomeState extends State<CompassHome> {
           email: _candidateEmail,
           displayName: 'Alex Morgan',
           candidateIdentifier: 'CP-842916',
+          score: 700,
           addressLine1: '41 Amir Temur Street',
           addressLine2: 'Office 1205',
           city: 'Tashkent',
@@ -275,7 +300,7 @@ class _CompassHomeState extends State<CompassHome> {
           name: 'Edu Action LLC.',
           code: '90087882',
         );
-    final candidateScore = randomDemoScore();
+    final candidateScore = candidate.score;
     return ScoreReportData(
       sessionId: 'local-session',
       requiredScore: exam.passScore,
@@ -298,23 +323,39 @@ class _CompassHomeState extends State<CompassHome> {
   }
 
   Future<void> _login() async {
+    setState(() {
+      _showLoginError = false;
+    });
+
+    late final LoginResult result;
     try {
-      final result = await context.read<AuthCubit>().login(
+      result = await context.read<AuthCubit>().login(
         username: _loginUsernameController.text.trim(),
         password: _loginPasswordController.text,
       );
-      await _loadCatalog();
+      if (!mounted) {
+        return;
+      }
+    } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() {
-        _loginResult = result;
-        _candidateEmail = result.candidate.email;
-        _portalStep = PortalFlowStep.readiness;
+        _showLoginError = true;
       });
-    } catch (error) {
-      _showSnackBar('Login failed: ${friendlyErrorMessage(error)}');
+      return;
     }
+
+    await _loadCatalog();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _loginResult = result;
+      _candidateEmail = result.candidate.email;
+      _portalStep = PortalFlowStep.readiness;
+      _showLoginError = false;
+    });
   }
 
   Future<void> _goToExamSelect() async {
@@ -364,18 +405,26 @@ class _CompassHomeState extends State<CompassHome> {
       }
       final unlocked = await context.read<ExamSessionCubit>().unlock(
         proctorUsername: _proctorUsernameController.text.trim(),
-        proctorPassword: _proctorPasswordController.text,
+        proctorPassword: _proctorUnlockPassword,
       );
       if (!mounted) {
         return;
       }
       if (!unlocked) {
-        _showSnackBar('Invalid proctor credentials.');
+        setState(() {
+          _verifyUnlockNoticeMessage = _verifyUnlockInvalidProctorNotice;
+        });
         return;
       }
+      setState(() {
+        _verifyUnlockNoticeMessage = null;
+      });
       _goTo(PortalFlowStep.systemCheck);
     } catch (error) {
-      _showSnackBar('Could not unlock exam: ${friendlyErrorMessage(error)}');
+      setState(() {
+        _verifyUnlockNoticeMessage =
+            'Could not unlock exam: ${friendlyErrorMessage(error)}';
+      });
     }
   }
 
@@ -399,23 +448,19 @@ class _CompassHomeState extends State<CompassHome> {
     );
   }
 
-  Future<void> _updateCandidateEmail(String email) async {
-    setState(() => _candidateEmail = email);
-    try {
-      final updated = await context.read<AuthCubit>().updateEmail(email);
-      if (mounted) {
-        setState(() => _candidateEmail = updated.email);
-      }
-    } catch (error) {
-      _showSnackBar('Could not update email: ${friendlyErrorMessage(error)}');
-    }
-  }
-
   void _clearVoucher() {
     setState(() {
       _hasVoucher = false;
       _assignedVoucher = 'Select';
       _voucherController.clear();
+    });
+  }
+
+  void _clearExamGroup() {
+    setState(() {
+      _hasExamGroup = false;
+      _assignedExamGroup = 'Select';
+      _examGroupController.clear();
     });
   }
 
@@ -425,14 +470,42 @@ class _CompassHomeState extends State<CompassHome> {
         usernameController: _loginUsernameController,
         passwordController: _loginPasswordController,
         onLogin: () => unawaited(_login()),
+        showInvalidLogin: _showLoginError,
       ),
       PortalFlowStep.readiness => ReadinessScreen(
+        userName:
+            _candidate?.displayName ?? _loginUsernameController.text.trim(),
         hasExamGroup: _hasExamGroup,
         hasVoucher: _hasVoucher,
+        assignedExamGroup: _assignedExamGroup,
         assignedVoucher: _assignedVoucher,
+        examGroupController: _examGroupController,
         assignedVoucherOptions: _assignedVoucherOptions,
         voucherController: _voucherController,
-        onExamGroupChanged: (value) => setState(() => _hasExamGroup = value),
+        onExamGroupChanged: (value) {
+          if (!value) {
+            _clearExamGroup();
+            return;
+          }
+          setState(() => _hasExamGroup = true);
+        },
+        onAssignedExamGroupChanged: (value) {
+          if (value == null) {
+            return;
+          }
+          setState(() => _assignedExamGroup = value);
+        },
+        onExamGroupInputChanged: (value) {
+          setState(() {
+            final upperValue = value.toUpperCase();
+            if (_examGroupController.text != upperValue) {
+              _examGroupController.text = upperValue;
+              _examGroupController.selection = TextSelection.collapsed(
+                offset: upperValue.length,
+              );
+            }
+          });
+        },
         onVoucherChanged: (value) {
           if (!value) {
             _clearVoucher();
@@ -484,23 +557,12 @@ class _CompassHomeState extends State<CompassHome> {
         onSelectExam: (exam) {
           setState(() {
             _selectedExam = exam;
-            _agreement = 'no';
-            _portalStep = PortalFlowStep.nda;
+            _verifyUnlockNoticeMessage = null;
+            _portalStep = PortalFlowStep.verifyUnlock;
           });
         },
         onRemoveVoucher: _clearVoucher,
         onPrevious: _goToPreviousPortalStep,
-      ),
-      PortalFlowStep.nda => NdaScreen(
-        agreement: _agreement,
-        onAgreementChanged: (value) {
-          if (value != null) {
-            setState(() => _agreement = value);
-          }
-        },
-        onPrevious: _goToPreviousPortalStep,
-        onNext: () => _goTo(PortalFlowStep.verifyUnlock),
-        agreementContent: _ndaContent,
       ),
       PortalFlowStep.verifyUnlock => VerifyUnlockScreen(
         language: _language,
@@ -508,12 +570,16 @@ class _CompassHomeState extends State<CompassHome> {
         voucherCode: _voucherController.text,
         candidateName: _candidate?.displayName ?? 'Ism\nFamiliya',
         testCenterName: _testCenter?.name ?? 'Edu Action LLC.',
-        durationText:
-            '00:${(_selectedExamData?.durationMinutes ?? 50).toString().padLeft(2, '0')}:00',
+        durationText: _selectedExamDurationText,
         proctorUsernameController: _proctorUsernameController,
         proctorPasswordController: _proctorPasswordController,
         canContinue: _canProctorContinue,
-        onProctorChanged: (_) => setState(() {}),
+        noticeMessage: _verifyUnlockNoticeMessage ?? _verifyUnlockDefaultNotice,
+        onProctorChanged: (_) {
+          setState(() {
+            _verifyUnlockNoticeMessage = null;
+          });
+        },
         onPrevious: _goToPreviousPortalStep,
         onContinue: () => unawaited(_unlockExam()),
       ),
@@ -521,10 +587,13 @@ class _CompassHomeState extends State<CompassHome> {
         selectedExam: _selectedExam,
         checkLabels: _systemCheckLabels,
         onPrevious: _goToPreviousPortalStep,
-        onNext: () => _goTo(PortalFlowStep.preExamLanding),
+        onNext: _showPreExamBlankBeforeLanding,
       ),
+      PortalFlowStep.preExamBlank => const ColoredBox(color: Colors.white),
       PortalFlowStep.preExamLanding => PreExamLandingScreen(
         selectedExam: _selectedExam,
+        userName:
+            _candidate?.displayName ?? _loginUsernameController.text.trim(),
         durationMinutes: _selectedExamData?.durationMinutes ?? 50,
         questionCount: _selectedExamData?.questionCount ?? 45,
         passScore: _selectedExamData?.passScore ?? 700,
@@ -536,8 +605,7 @@ class _CompassHomeState extends State<CompassHome> {
         email: _candidateEmail,
         scoreReport: _scoreReport,
         pathways: _scoreReport?.pathways ?? _catalog?.pathways,
-        onEmailChanged: (value) => unawaited(_updateCandidateEmail(value)),
-        onViewFullScoreReport: () => _goTo(PortalFlowStep.fullScoreReport),
+        onViewFullScoreReport: () {},
       ),
       PortalFlowStep.fullScoreReport => FullScoreReportScreen(
         scoreReport: _scoreReport,
@@ -558,7 +626,9 @@ class _CompassHomeState extends State<CompassHome> {
   Widget build(BuildContext context) {
     final portalScreen = _buildPortalScreen();
     final fullScoreReport = _portalStep == PortalFlowStep.fullScoreReport;
-    final customPortalShell = _portalStep == PortalFlowStep.preExamLanding;
+    final customPortalShell =
+        _portalStep == PortalFlowStep.preExamBlank ||
+        _portalStep == PortalFlowStep.preExamLanding;
 
     return LockdownShell(
       examLockdownMode: widget.examLockdownMode,

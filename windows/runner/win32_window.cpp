@@ -31,6 +31,51 @@ static int g_active_window_count = 0;
 
 using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
+void SetTransparentWindowBackground(HWND window) {
+  const HINSTANCE user32_module = LoadLibrary(TEXT("user32.dll"));
+  if (!user32_module) {
+    return;
+  }
+
+  typedef enum _ACCENT_STATE {
+    ACCENT_DISABLED = 0,
+    ACCENT_ENABLE_GRADIENT = 1,
+    ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+    ACCENT_ENABLE_BLURBEHIND = 3,
+    ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+    ACCENT_ENABLE_HOSTBACKDROP = 5,
+    ACCENT_INVALID_STATE = 6
+  } ACCENT_STATE;
+
+  struct ACCENTPOLICY {
+    int nAccentState;
+    int nFlags;
+    int nColor;
+    int nAnimationId;
+  };
+
+  struct WINCOMPATTRDATA {
+    int nAttribute;
+    PVOID pData;
+    ULONG ulDataSize;
+  };
+
+  typedef BOOL(WINAPI* SetWindowCompositionAttributeProc)(
+      HWND,
+      WINCOMPATTRDATA*);
+
+  const auto set_window_composition_attribute =
+      reinterpret_cast<SetWindowCompositionAttributeProc>(
+          GetProcAddress(user32_module, "SetWindowCompositionAttribute"));
+  if (set_window_composition_attribute) {
+    ACCENTPOLICY policy = {ACCENT_ENABLE_TRANSPARENTGRADIENT, 2, 0, 0};
+    WINCOMPATTRDATA data = {19, &policy, sizeof(policy)};
+    set_window_composition_attribute(window, &data);
+  }
+
+  FreeLibrary(user32_module);
+}
+
 // Scale helper to convert logical scaler values to physical using passed in
 // scale factor
 int Scale(int source, double scale_factor) {
@@ -144,6 +189,7 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
+  ConfigureStartupSplashWindow(window);
   UpdateTheme(window);
 
   return OnCreate();
@@ -179,6 +225,24 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_NCCALCSIZE:
+      if (startup_splash_style_ && wparam) {
+        return 0;
+      }
+      break;
+
+    case WM_NCACTIVATE:
+      if (startup_splash_style_) {
+        return 1;
+      }
+      break;
+
+    case WM_NCHITTEST:
+      if (startup_splash_style_) {
+        return HTCLIENT;
+      }
+      break;
+
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();
@@ -198,6 +262,18 @@ Win32Window::MessageHandler(HWND hwnd,
       return 0;
     }
     case WM_SIZE: {
+      if (startup_splash_style_) {
+        const double scale_factor =
+            FlutterDesktopGetDpiForHWND(hwnd) / 96.0;
+        const int logical_width =
+            static_cast<int>(LOWORD(lparam) / scale_factor);
+        const int logical_height =
+            static_cast<int>(HIWORD(lparam) / scale_factor);
+        if (logical_width >= 1000 && logical_height >= 680) {
+          DisableStartupSplashStyle(hwnd);
+        }
+      }
+
       RECT rect = GetClientArea();
       if (child_content_ != nullptr) {
         // Size and position the child window.
@@ -285,4 +361,17 @@ void Win32Window::UpdateTheme(HWND const window) {
     DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
                           &enable_dark_mode, sizeof(enable_dark_mode));
   }
+}
+
+void Win32Window::ConfigureStartupSplashWindow(HWND const window) {
+  SetTransparentWindowBackground(window);
+  SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
+void Win32Window::DisableStartupSplashStyle(HWND const window) {
+  startup_splash_style_ = false;
+  SetWindowPos(window, nullptr, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE |
+                   SWP_FRAMECHANGED);
 }

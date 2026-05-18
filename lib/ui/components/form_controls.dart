@@ -183,6 +183,9 @@ class CompassRadioOption<T> extends StatelessWidget {
       groupValue: groupValue,
       onChanged: (selectedValue) => onChanged?.call(selectedValue),
       child: InkWell(
+        mouseCursor: onChanged == null
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
         onTap: onChanged == null ? null : () => onChanged!(value),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),

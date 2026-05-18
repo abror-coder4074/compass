@@ -124,10 +124,7 @@ class _QuestionFrame extends StatelessWidget {
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 500),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFD0D0D0)),
-      ),
+      color: Colors.white,
       child: child,
     );
   }
@@ -264,6 +261,7 @@ class _MatrixQuestion extends StatelessWidget {
                           key: ValueKey(
                             'matrix-${question.number}-row-$rowIndex-$column',
                           ),
+                          mouseCursor: SystemMouseCursors.click,
                           onTap: () => onAnswerSelected(rowIndex, column),
                           child: Padding(
                             padding: const EdgeInsets.all(5),
@@ -439,9 +437,14 @@ class _MatchingQuestion extends StatelessWidget {
 }
 
 class ExamSummaryScreen extends StatelessWidget {
-  const ExamSummaryScreen({required this.session, super.key});
+  const ExamSummaryScreen({
+    required this.session,
+    required this.onQuestionSelected,
+    super.key,
+  });
 
   final ExamSessionState session;
+  final ValueChanged<int> onQuestionSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -505,7 +508,7 @@ class ExamSummaryScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    for (final question in session.questions)
+                    for (final (index, question) in session.questions.indexed)
                       TableRow(
                         decoration: BoxDecoration(
                           color: question.number.isOdd
@@ -513,15 +516,23 @@ class ExamSummaryScreen extends StatelessWidget {
                               : Colors.white,
                         ),
                         children: [
-                          _bodyCell(
-                            Text(
+                          _clickableBodyCell(
+                            key: ValueKey(
+                              'summary-row-${question.number}-number',
+                            ),
+                            onPressed: () => onQuestionSelected(index),
+                            child: Text(
                               '${question.number}',
                               textAlign: TextAlign.center,
                               style: const TextStyle(fontSize: 15),
                             ),
                           ),
-                          _bodyCell(
-                            Text(
+                          _clickableBodyCell(
+                            key: ValueKey(
+                              'summary-row-${question.number}-content',
+                            ),
+                            onPressed: () => onQuestionSelected(index),
+                            child: Text(
                               question.prompt,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -533,24 +544,28 @@ class ExamSummaryScreen extends StatelessWidget {
                               'summary-row-${question.number}-answered',
                             ),
                             active: question.isAnswered,
+                            onPressed: () => onQuestionSelected(index),
                           ),
                           _statusBodyCell(
                             key: ValueKey(
                               'summary-row-${question.number}-unanswered',
                             ),
                             active: !question.isAnswered,
+                            onPressed: () => onQuestionSelected(index),
                           ),
                           _statusBodyCell(
                             key: ValueKey(
                               'summary-row-${question.number}-review',
                             ),
                             active: question.markedForReview,
+                            onPressed: () => onQuestionSelected(index),
                           ),
                           _statusBodyCell(
                             key: ValueKey(
                               'summary-row-${question.number}-feedback',
                             ),
                             active: question.markedForFeedback,
+                            onPressed: () => onQuestionSelected(index),
                           ),
                         ],
                       ),
@@ -619,14 +634,35 @@ class ExamSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _statusBodyCell({required Key key, required bool active}) {
-    return Padding(
+  Widget _clickableBodyCell({
+    required Key key,
+    required Widget child,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
       key: key,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Center(
-        child: active
-            ? const Icon(Icons.check, size: 22, color: Colors.black)
-            : const SizedBox(width: 22, height: 22),
+      mouseCursor: SystemMouseCursors.click,
+      onTap: onPressed,
+      child: _bodyCell(child),
+    );
+  }
+
+  Widget _statusBodyCell({
+    required Key key,
+    required bool active,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      key: key,
+      mouseCursor: SystemMouseCursors.click,
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Center(
+          child: active
+              ? const Icon(Icons.check, size: 22, color: Colors.black)
+              : const SizedBox(width: 22, height: 22),
+        ),
       ),
     );
   }
@@ -649,6 +685,7 @@ class _QuestionOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      mouseCursor: SystemMouseCursors.click,
       onTap: onPressed,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
@@ -777,16 +814,23 @@ class _DraggableAnswerBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final child = _AnswerBox(width: width, text: item);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
-      child: Draggable<String>(
-        data: item,
-        feedback: Material(
-          color: Colors.transparent,
-          child: _AnswerBox(width: width ?? 320, text: item, elevated: true),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Draggable<String>(
+          data: item,
+          feedback: Material(
+            color: Colors.transparent,
+            child: _AnswerBox(width: width ?? 320, text: item, elevated: true),
+          ),
+          childWhenDragging: Opacity(opacity: 0.35, child: child),
+          child: InkWell(
+            mouseCursor: SystemMouseCursors.click,
+            onTap: onTap,
+            child: child,
+          ),
         ),
-        childWhenDragging: Opacity(opacity: 0.35, child: child),
-        child: InkWell(onTap: onTap, child: child),
       ),
     );
   }
@@ -893,6 +937,9 @@ class _RoundIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      mouseCursor: onPressed == null
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
       onTap: onPressed,
       customBorder: const CircleBorder(),
       child: Opacity(
@@ -965,6 +1012,9 @@ class _MatchingTargetRow extends StatelessWidget {
             builder: (context, candidateData, rejectedData) {
               return InkWell(
                 key: ValueKey('match-$questionNumber-target-$targetIndex'),
+                mouseCursor: assignedItem == null
+                    ? SystemMouseCursors.basic
+                    : SystemMouseCursors.click,
                 onTap: assignedItem == null ? null : onCleared,
                 child: Container(
                   width: 154,

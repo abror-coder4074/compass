@@ -33,18 +33,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Required'), findsWidgets);
+    final passwordEditable = tester.widget<EditableText>(
+      find.descendant(
+        of: find.widgetWithText(TextFormField, 'Password'),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(passwordEditable.obscureText, isTrue);
 
     await _enterTextField(tester, 'Username', 'student.demo');
     await _enterTextField(tester, 'Password', 'Compass2026');
     await _enterTextField(tester, 'Email', 'student@example.com');
     await _enterTextField(tester, 'Display Name', 'Student Demo');
     await _enterTextField(tester, 'Candidate Identifier', 'CAND-DEMO-001');
+    await _enterTextField(tester, 'Score', '740');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(repository.lastSavedSection?.table, 'candidates');
     expect(repository.lastPayload?['username'], 'student.demo');
     expect(repository.lastPayload?['password'], 'Compass2026');
+    expect(repository.lastPayload?['score'], 740);
   });
 
   testWidgets('question editor validates options and saves complete draft', (
@@ -212,6 +221,7 @@ AdminSnapshot _snapshot() {
       'email': 'student@example.com',
       'display_name': 'Student Demo',
       'candidate_identifier': 'CAND-001',
+      'score': 700,
       'address_line1': '',
       'address_line2': '',
       'city': '',

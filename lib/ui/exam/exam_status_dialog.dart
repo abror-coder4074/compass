@@ -84,7 +84,7 @@ class _ExamStatusDialog extends StatelessWidget {
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
-                    ),
+                    ).copyWith(side: CompassControlStates.elevatedHoverSide()),
                     child: Text(buttonLabel),
                   ),
                 ),

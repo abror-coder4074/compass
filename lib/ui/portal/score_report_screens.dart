@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../data/compass_models.dart';
 import '../compass_components.dart';
@@ -11,7 +12,6 @@ class ScoreSummaryScreen extends StatelessWidget {
   const ScoreSummaryScreen({
     required this.selectedExam,
     required this.email,
-    required this.onEmailChanged,
     required this.onViewFullScoreReport,
     this.scoreReport,
     this.pathways,
@@ -20,7 +20,6 @@ class ScoreSummaryScreen extends StatelessWidget {
 
   final String selectedExam;
   final String email;
-  final ValueChanged<String> onEmailChanged;
   final VoidCallback onViewFullScoreReport;
   final ScoreReportData? scoreReport;
   final List<PathwayData>? pathways;
@@ -47,10 +46,7 @@ class ScoreSummaryScreen extends StatelessWidget {
               const SizedBox(height: 40),
               _ScorePortalPanel(
                 title: 'Verify Email Address',
-                child: _VerifyEmailContent(
-                  email: email,
-                  onUpdateEmail: () => _showUpdateEmailDialog(context),
-                ),
+                child: _VerifyEmailContent(email: email, onUpdateEmail: () {}),
               ),
               const SizedBox(height: 26),
               _ScorePortalPanel(
@@ -74,60 +70,6 @@ class ScoreSummaryScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _showUpdateEmailDialog(BuildContext context) {
-    final controller = TextEditingController(text: email);
-
-    return showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.email_outlined, color: CompassColors.certiportTeal),
-              SizedBox(width: 10),
-              Text('Update Email Address'),
-            ],
-          ),
-          content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Enter the email address for exam session notifications.',
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  key: const ValueKey('score-summary-email-input'),
-                  controller: controller,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email address'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            CompassSecondaryButton(
-              label: 'Cancel',
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            CompassPrimaryButton(
-              label: 'Save',
-              onPressed: () {
-                final nextEmail = controller.text.trim();
-                if (nextEmail.isNotEmpty) {
-                  onEmailChanged(nextEmail);
-                }
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 
