@@ -29,6 +29,7 @@ const String _switchBlockedMessage =
     'Switching to another application is not allowed while the exam is active.';
 const Duration _lockdownGuardInterval = Duration(milliseconds: 700);
 const Duration _minimumStartupSplashDuration = Duration(milliseconds: 1400);
+const Duration _postStartupWhiteSplashDuration = Duration(milliseconds: 1500);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,7 +124,12 @@ class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
         return;
       }
 
-      await windowManager.setOpacity(0);
+      await _openMainWindow();
+      if (!mounted) {
+        return;
+      }
+
+      await Future<void>.delayed(_postStartupWhiteSplashDuration);
       if (!mounted) {
         return;
       }
@@ -132,12 +138,6 @@ class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
         _startupComplete = true;
         _startupError = null;
       });
-
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) {
-        return;
-      }
-      await _openMainWindow();
     } catch (error) {
       if (!mounted) {
         return;
