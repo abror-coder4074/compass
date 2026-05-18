@@ -551,6 +551,7 @@ class ExamSummaryScreen extends StatelessWidget {
                               'summary-row-${question.number}-unanswered',
                             ),
                             active: !question.isAnswered,
+                            outlined: true,
                             onPressed: () => onQuestionSelected(index),
                           ),
                           _statusBodyCell(
@@ -602,13 +603,36 @@ class ExamSummaryScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
       child: Column(
         children: [
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: CompassColors.examNavy,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+          SizedBox(
+            width: double.infinity,
+            height: 22,
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(
+                        Icons.edit_square,
+                        size: 12,
+                        color: Color(0xFF587286),
+                      ),
+                    ),
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: CompassColors.examNavy,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 2),
@@ -651,6 +675,7 @@ class ExamSummaryScreen extends StatelessWidget {
     required Key key,
     required bool active,
     required VoidCallback onPressed,
+    bool outlined = false,
   }) {
     return InkWell(
       key: key,
@@ -660,11 +685,80 @@ class ExamSummaryScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Center(
           child: active
-              ? const Icon(Icons.check, size: 22, color: Colors.black)
-              : const SizedBox(width: 22, height: 22),
+              ? _SummaryCheckIcon(outlined: outlined)
+              : const SizedBox(width: 24, height: 24),
         ),
       ),
     );
+  }
+}
+
+class _SummaryCheckIcon extends StatelessWidget {
+  const _SummaryCheckIcon({required this.outlined});
+
+  final bool outlined;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: CustomPaint(painter: _SummaryCheckIconPainter(outlined: outlined)),
+    );
+  }
+}
+
+class _SummaryCheckIconPainter extends CustomPainter {
+  const _SummaryCheckIconPainter({required this.outlined});
+
+  final bool outlined;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scaleX = size.width / 24;
+    final scaleY = size.height / 24;
+    Offset p(double x, double y) => Offset(x * scaleX, y * scaleY);
+    final checkPath = Path()
+      ..moveTo(p(5.2, 12.5).dx, p(5.2, 12.5).dy)
+      ..lineTo(p(9.8, 17).dx, p(9.8, 17).dy)
+      ..lineTo(p(18.8, 7).dx, p(18.8, 7).dy);
+
+    if (outlined) {
+      canvas.drawPath(
+        checkPath,
+        Paint()
+          ..color = const Color(0xFF606060)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5.2
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+      canvas.drawPath(
+        checkPath,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.4
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+      return;
+    }
+
+    canvas.drawPath(
+      checkPath,
+      Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.6
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SummaryCheckIconPainter oldDelegate) {
+    return oldDelegate.outlined != outlined;
   }
 }
 

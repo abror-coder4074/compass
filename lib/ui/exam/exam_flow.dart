@@ -293,6 +293,10 @@ class _ExamFlowState extends State<ExamFlow> {
   }
 
   void _finishExam() {
+    if (_session.unansweredCount > 0) {
+      return;
+    }
+
     _timer?.cancel();
     setState(() {
       _session.stage = ExamFlowStage.feedbackIntro;

@@ -233,6 +233,11 @@ void main() {
     await tester.tap(voucherToggle);
     await tester.pumpAndSettle();
 
+    final nextWithoutVoucher = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Next'),
+    );
+    expect(nextWithoutVoucher.onPressed, isNull);
+
     final voucherSelect = find.byKey(
       const ValueKey('readiness-voucher-select'),
     );
@@ -269,7 +274,7 @@ void main() {
     expect(find.text('Edu Action LLC.'), findsOneWidget);
   });
 
-  testWidgets('voucher remove clears exam select and payment state', (
+  testWidgets('voucher card cannot be removed from exam select', (
     WidgetTester tester,
   ) async {
     await _pumpHome(tester);
@@ -290,16 +295,12 @@ void main() {
 
     expect(find.text('Voucher'), findsOneWidget);
     expect(find.text('3075-HZ25-5GVY-3X5P'), findsOneWidget);
-
-    await _tapButton(tester, 'Remove');
-
-    expect(find.text('Voucher'), findsNothing);
-    expect(find.text('3075-HZ25-5GVY-3X5P'), findsNothing);
+    expect(find.text('Remove'), findsNothing);
 
     await _tapElevatedButton(tester, 'Select exam');
 
-    expect(find.text('No voucher'), findsOneWidget);
-    expect(find.text('3075-HZ25-5GVY-3X5P'), findsNothing);
+    expect(find.text('Voucher'), findsOneWidget);
+    expect(find.text('No voucher'), findsNothing);
   });
 
   testWidgets('unlock, system check, and Start Exam callback are wired', (
@@ -431,6 +432,11 @@ void main() {
     expect(unansweredCount.data, '44');
     expect(reviewCount.data, '1');
     expect(feedbackCount.data, '1');
+
+    final finishButton = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Finish Exam'),
+    );
+    expect(finishButton.onPressed, isNull);
   });
 
   testWidgets('exam summary question row opens the selected question', (
@@ -766,13 +772,74 @@ Future<void> _enableReadinessVoucher(WidgetTester tester) async {
   await tester.ensureVisible(voucherToggle);
   await tester.tap(voucherToggle);
   await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const ValueKey('readiness-voucher-input')),
+    '3075-hz25-5gvy-3x5p',
+  );
+  await tester.pumpAndSettle();
 }
 
 Future<void> _advanceToFeedbackIntro(WidgetTester tester) async {
   await _tapButton(tester, 'Next');
   await _tapButton(tester, 'Start Exam');
-  await _tapText(tester, 'Go To Summary');
+  await _answerAllExamQuestions(tester);
   await _tapButton(tester, 'Finish Exam');
+}
+
+Future<void> _answerAllExamQuestions(WidgetTester tester) async {
+  for (var questionNumber = 1; questionNumber <= 33; questionNumber++) {
+    await _tapByKey(tester, ValueKey('single-option-$questionNumber-A'));
+    await _tapButton(tester, 'Next');
+  }
+
+  await _tapText(tester, 'Capture video');
+  await _tapText(tester, 'Finalize production');
+  await _tapText(tester, 'Distribute video');
+  await _tapButton(tester, 'Next');
+
+  await _tapText(tester, 'Develop the prototype');
+  await _tapText(tester, 'Identify project requirements');
+  await _tapText(tester, 'Generate ideas');
+  await _tapText(tester, 'Test the prototype');
+  await _tapText(tester, 'Refine the prototype');
+  await _tapButton(tester, 'Next');
+
+  await _tapByKey(tester, const ValueKey('multi-option-36-A'));
+  await _tapByKey(tester, const ValueKey('multi-option-36-B'));
+  await _tapByKey(tester, const ValueKey('multi-option-36-D'));
+  await _tapButton(tester, 'Next');
+
+  await _tapByKey(tester, const ValueKey('single-option-37-A'));
+  await _tapButton(tester, 'Next');
+
+  await _tapByKey(tester, const ValueKey('multi-option-38-A'));
+  await _tapByKey(tester, const ValueKey('multi-option-38-D'));
+  await _tapButton(tester, 'Next');
+
+  await _tapByKey(tester, const ValueKey('single-option-39-A'));
+  await _tapButton(tester, 'Next');
+  await _tapByKey(tester, const ValueKey('single-option-40-A'));
+  await _tapButton(tester, 'Next');
+
+  for (var row = 0; row < 4; row++) {
+    await _tapByKey(tester, ValueKey('matrix-41-row-$row-Yes'));
+  }
+  await _tapButton(tester, 'Next');
+
+  await _tapByKey(tester, const ValueKey('multi-option-42-A'));
+  await _tapByKey(tester, const ValueKey('multi-option-42-D'));
+  await _tapButton(tester, 'Next');
+
+  await _tapByKey(tester, const ValueKey('single-option-43-A'));
+  await _tapButton(tester, 'Next');
+
+  for (var row = 0; row < 4; row++) {
+    await _tapByKey(tester, ValueKey('matrix-44-row-$row-True'));
+  }
+  await _tapButton(tester, 'Next');
+
+  await _tapByKey(tester, const ValueKey('single-option-45-A'));
+  await _tapButton(tester, 'Next');
 }
 
 Future<void> _advanceToQuestion(WidgetTester tester, int questionNumber) async {

@@ -152,14 +152,9 @@ class PortalTab extends StatelessWidget {
 }
 
 class VoucherCard extends StatelessWidget {
-  const VoucherCard({
-    required this.voucherCode,
-    required this.onRemove,
-    super.key,
-  });
+  const VoucherCard({required this.voucherCode, super.key});
 
   final String voucherCode;
-  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -225,17 +220,6 @@ class VoucherCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                      ),
-                      TextButton(
-                        onPressed: onRemove,
-                        style: TextButton.styleFrom(
-                          foregroundColor: CompassColors.certiportTeal,
-                          textStyle: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        child: const Text('Remove'),
                       ),
                     ],
                   ),

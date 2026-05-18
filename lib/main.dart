@@ -30,6 +30,7 @@ const String _switchBlockedMessage =
 const Duration _lockdownGuardInterval = Duration(milliseconds: 700);
 const Duration _minimumStartupSplashDuration = Duration(milliseconds: 1400);
 const Duration _postStartupWhiteSplashDuration = Duration(milliseconds: 1500);
+const Duration _windowResizeTimeout = Duration(seconds: 3);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,15 +81,26 @@ Future<void> _showMainCompassWindow() async {
   await windowManager.setTitleBarStyle(TitleBarStyle.normal);
   await windowManager.setBackgroundColor(Colors.white);
   await windowManager.setMinimumSize(_minimumWindowSize);
-  await windowManager.setSize(_normalWindowSize);
+  await _runWindowResizeOperation(
+    () => windowManager.setSize(_normalWindowSize),
+  );
   await windowManager.center();
   await windowManager.setTitle('Compass');
   await windowManager.setResizable(true);
   await windowManager.setMinimizable(true);
   await windowManager.setMaximizable(true);
-  await windowManager.setOpacity(1);
   await windowManager.show();
   await windowManager.focus();
+}
+
+Future<void> _runWindowResizeOperation(
+  Future<void> Function() operation,
+) async {
+  try {
+    await operation().timeout(_windowResizeTimeout);
+  } on TimeoutException {
+    debugPrint('Window resize operation timed out; continuing.');
+  }
 }
 
 class CompassBootstrapApp extends StatefulWidget {
@@ -102,6 +114,7 @@ class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
   Object? _startupError;
   bool _startupComplete = false;
   bool _openingMainWindow = false;
+  bool _showWhiteStartupSplash = false;
 
   @override
   void initState() {
@@ -113,6 +126,7 @@ class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
     setState(() {
       _startupComplete = false;
       _startupError = null;
+      _showWhiteStartupSplash = false;
     });
     unawaited(_startApp());
   }
@@ -120,6 +134,14 @@ class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
   Future<void> _startApp() async {
     try {
       await _initializeCompassServices();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _showWhiteStartupSplash = true;
+      });
+      await WidgetsBinding.instance.endOfFrame;
       if (!mounted) {
         return;
       }
@@ -145,8 +167,8 @@ class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
       setState(() {
         _startupComplete = false;
         _startupError = error;
+        _showWhiteStartupSplash = false;
       });
-      await windowManager.setOpacity(1);
       await windowManager.show();
     }
   }
@@ -175,7 +197,11 @@ class _CompassBootstrapAppState extends State<CompassBootstrapApp> {
     }
 
     if (!_startupComplete) {
-      return const CompassStartupSplashApp();
+      return CompassStartupSplashApp(
+        backgroundColor: _showWhiteStartupSplash
+            ? Colors.white
+            : _startupTransparentBackground,
+      );
     }
 
     return const CompassApp();
@@ -191,6 +217,7 @@ class CompassApp extends StatefulWidget {
 
 class _CompassAppState extends State<CompassApp> with WindowListener {
   late final CompassRepository _repository = SupabaseCompassRepository();
+  final _navigatorKey = GlobalKey<NavigatorState>();
   bool _examLockdownMode = false;
   bool _enteringSecureExam = false;
   bool _lockdownNoticeVisible = false;
@@ -302,7 +329,9 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
       if (!await windowManager.isFullScreen()) {
         await windowManager.restore();
         await windowManager.unmaximize();
-        await windowManager.setFullScreen(true);
+        await _runWindowResizeOperation(
+          () => windowManager.setFullScreen(true),
+        );
       }
       if (!_examLockdownMode) {
         return;
@@ -330,7 +359,7 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
     await windowManager.setMinimizable(false);
     await windowManager.setMaximizable(false);
     await windowManager.setAlwaysOnTop(true);
-    await windowManager.setFullScreen(true);
+    await _runWindowResizeOperation(() => windowManager.setFullScreen(true));
     await windowManager.focus();
   }
 
@@ -380,13 +409,15 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
     _stopLockdownGuard();
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setClosable(true);
-    await windowManager.setFullScreen(false);
+    await _runWindowResizeOperation(() => windowManager.setFullScreen(false));
     await Future<void>.delayed(const Duration(milliseconds: 120));
     await windowManager.restore();
     await windowManager.unmaximize();
     await windowManager.setPreventClose(false);
     await windowManager.setMinimumSize(_minimumWindowSize);
-    await windowManager.setSize(_normalWindowSize);
+    await _runWindowResizeOperation(
+      () => windowManager.setSize(_normalWindowSize),
+    );
     await windowManager.center();
     await windowManager.setResizable(true);
     await windowManager.setMinimizable(true);
@@ -397,15 +428,16 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
   }
 
   Future<void> _showLockdownNotice({String? title, String? message}) async {
-    if (_lockdownNoticeVisible || !mounted) {
+    final dialogContext = _navigatorKey.currentContext;
+    if (_lockdownNoticeVisible || !mounted || dialogContext == null) {
       return;
     }
 
     _lockdownNoticeVisible = true;
     try {
       await showDialog<void>(
-        context: context,
-        builder: (dialogContext) {
+        context: dialogContext,
+        builder: (modalContext) {
           return CompassModalDialog(
             icon: Icons.lock_outline,
             title: title ?? _lockdownTitle,
@@ -414,7 +446,7 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
               CompassPrimaryButton(
                 label: 'OK',
                 tone: CompassButtonTone.exam,
-                onPressed: () => Navigator.of(dialogContext).pop(),
+                onPressed: () => Navigator.of(modalContext).pop(),
               ),
             ],
           );
@@ -426,9 +458,14 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
   }
 
   Future<void> _showExitSimulation() {
+    final dialogContext = _navigatorKey.currentContext;
+    if (!mounted || dialogContext == null) {
+      return Future<void>.value();
+    }
+
     return showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
+      context: dialogContext,
+      builder: (modalContext) {
         return CompassModalDialog(
           icon: Icons.logout,
           title: 'Close Window',
@@ -439,11 +476,11 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
           actions: [
             CompassSecondaryButton(
               label: 'Cancel',
-              onPressed: () => Navigator.of(dialogContext).pop(),
+              onPressed: () => Navigator.of(modalContext).pop(),
             ),
             CompassPrimaryButton(
               label: 'End Session',
-              onPressed: () => Navigator.of(dialogContext).pop(),
+              onPressed: () => Navigator.of(modalContext).pop(),
             ),
           ],
         );
@@ -454,6 +491,7 @@ class _CompassAppState extends State<CompassApp> with WindowListener {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Compass',
       theme: buildCompassTheme(),

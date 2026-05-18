@@ -561,7 +561,6 @@ class _CompassHomeState extends State<CompassHome> {
             _portalStep = PortalFlowStep.verifyUnlock;
           });
         },
-        onRemoveVoucher: _clearVoucher,
         onPrevious: _goToPreviousPortalStep,
       ),
       PortalFlowStep.verifyUnlock => VerifyUnlockScreen(

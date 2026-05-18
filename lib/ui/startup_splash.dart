@@ -7,16 +7,21 @@ import 'compass_theme.dart';
 const Color _startupTransparentBackground = Color(0x00000000);
 
 class CompassStartupSplashApp extends StatelessWidget {
-  const CompassStartupSplashApp({super.key});
+  const CompassStartupSplashApp({
+    this.backgroundColor = _startupTransparentBackground,
+    super.key,
+  });
+
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Compass',
-      color: _startupTransparentBackground,
+      color: backgroundColor,
       theme: buildCompassTheme(),
-      home: const CompassStartupSplash(),
+      home: CompassStartupSplash(backgroundColor: backgroundColor),
     );
   }
 }
@@ -44,16 +49,21 @@ class CompassStartupErrorApp extends StatelessWidget {
 }
 
 class CompassStartupSplash extends StatelessWidget {
-  const CompassStartupSplash({super.key});
+  const CompassStartupSplash({
+    this.backgroundColor = _startupTransparentBackground,
+    super.key,
+  });
+
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final contentWidth = math.max(280.0, math.min(520.0, screenWidth - 64));
-    final iconSize = math.max(170.0, math.min(230.0, contentWidth * 0.44));
+    final iconSize = math.max(138.0, math.min(188.0, contentWidth * 0.36));
 
     return Scaffold(
-      backgroundColor: _startupTransparentBackground,
+      backgroundColor: backgroundColor,
       body: Center(
         child: Transform.translate(
           offset: const Offset(0, -24),
@@ -71,9 +81,10 @@ class CompassStartupSplash extends StatelessWidget {
                 width: contentWidth,
                 child: const Text(
                   'Loading, please wait ...',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFF4B4B4B),
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.w500,
                     height: 1.1,
                   ),

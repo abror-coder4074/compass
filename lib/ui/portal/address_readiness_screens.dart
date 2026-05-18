@@ -47,6 +47,8 @@ class ReadinessScreen extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 900;
+        final canContinue =
+            hasVoucher && voucherController.text.trim().isNotEmpty;
         return Padding(
           padding: const EdgeInsets.fromLTRB(42, 14, 42, 30),
           child: Center(
@@ -128,7 +130,7 @@ class ReadinessScreen extends StatelessWidget {
                       width: 68,
                       height: 42,
                       child: ElevatedButton(
-                        onPressed: hasVoucher ? onNext : null,
+                        onPressed: canContinue ? onNext : null,
                         style:
                             ElevatedButton.styleFrom(
                               backgroundColor: CompassColors.certiportTeal,

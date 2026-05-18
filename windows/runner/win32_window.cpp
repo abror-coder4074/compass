@@ -31,21 +31,12 @@ static int g_active_window_count = 0;
 
 using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
-void SetTransparentWindowBackground(HWND window) {
+void ApplyWindowAccentPolicy(HWND window, int accent_state, int flags,
+                             int color) {
   const HINSTANCE user32_module = LoadLibrary(TEXT("user32.dll"));
   if (!user32_module) {
     return;
   }
-
-  typedef enum _ACCENT_STATE {
-    ACCENT_DISABLED = 0,
-    ACCENT_ENABLE_GRADIENT = 1,
-    ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
-    ACCENT_ENABLE_BLURBEHIND = 3,
-    ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
-    ACCENT_ENABLE_HOSTBACKDROP = 5,
-    ACCENT_INVALID_STATE = 6
-  } ACCENT_STATE;
 
   struct ACCENTPOLICY {
     int nAccentState;
@@ -68,12 +59,26 @@ void SetTransparentWindowBackground(HWND window) {
       reinterpret_cast<SetWindowCompositionAttributeProc>(
           GetProcAddress(user32_module, "SetWindowCompositionAttribute"));
   if (set_window_composition_attribute) {
-    ACCENTPOLICY policy = {ACCENT_ENABLE_TRANSPARENTGRADIENT, 2, 0, 0};
+    ACCENTPOLICY policy = {accent_state, flags, color, 0};
     WINCOMPATTRDATA data = {19, &policy, sizeof(policy)};
     set_window_composition_attribute(window, &data);
   }
 
   FreeLibrary(user32_module);
+}
+
+void SetTransparentWindowBackground(HWND window) {
+  constexpr int kAccentEnableTransparentGradient = 2;
+  ApplyWindowAccentPolicy(window, kAccentEnableTransparentGradient, 2, 0);
+}
+
+void SetOpaqueWindowBackground(HWND window) {
+  constexpr int kAccentDisabled = 0;
+  ApplyWindowAccentPolicy(window, kAccentDisabled, 0, 0);
+  MARGINS margins = {0, 0, 0, 0};
+  DwmExtendFrameIntoClientArea(window, &margins);
+  RedrawWindow(window, nullptr, nullptr,
+               RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 }
 
 // Scale helper to convert logical scaler values to physical using passed in
@@ -371,6 +376,7 @@ void Win32Window::ConfigureStartupSplashWindow(HWND const window) {
 
 void Win32Window::DisableStartupSplashStyle(HWND const window) {
   startup_splash_style_ = false;
+  SetOpaqueWindowBackground(window);
   SetWindowPos(window, nullptr, 0, 0, 0, 0,
                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE |
                    SWP_FRAMECHANGED);

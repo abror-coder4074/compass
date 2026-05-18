@@ -149,13 +149,13 @@ class _SummaryTableRow extends StatelessWidget {
               _summaryCell(
                 score,
                 width: scoreWidth,
-                large: !header,
+                large: false,
                 horizontalPadding: horizontalPadding,
               ),
               _summaryCell(
                 status,
                 width: statusWidth,
-                large: !header,
+                large: false,
                 horizontalPadding: horizontalPadding,
               ),
               SizedBox(

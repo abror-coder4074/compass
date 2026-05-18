@@ -152,7 +152,7 @@ extension _ExamFlowLayout on _ExamFlowState {
           CompassPrimaryButton(
             label: 'Finish Exam',
             tone: CompassButtonTone.exam,
-            onPressed: _finishExam,
+            onPressed: _session.unansweredCount == 0 ? _finishExam : null,
           ),
         ],
       ),

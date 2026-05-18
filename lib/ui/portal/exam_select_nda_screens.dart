@@ -15,7 +15,6 @@ class ExamSelectScreen extends StatelessWidget {
     required this.onTabChanged,
     required this.onProgramChanged,
     required this.onSelectExam,
-    required this.onRemoveVoucher,
     required this.onPrevious,
     this.programOptions = portalPrograms,
     this.examTitles = const [
@@ -34,7 +33,6 @@ class ExamSelectScreen extends StatelessWidget {
   final ValueChanged<String> onTabChanged;
   final ValueChanged<String?> onProgramChanged;
   final ValueChanged<String> onSelectExam;
-  final VoidCallback onRemoveVoucher;
   final VoidCallback onPrevious;
   final Map<String, String> programOptions;
   final List<String> examTitles;
@@ -82,10 +80,7 @@ class ExamSelectScreen extends StatelessWidget {
               ),
               if (voucherCode.trim().isNotEmpty) ...[
                 const SizedBox(height: 16),
-                VoucherCard(
-                  voucherCode: voucherCode,
-                  onRemove: onRemoveVoucher,
-                ),
+                VoucherCard(voucherCode: voucherCode),
               ],
               const SizedBox(height: 18),
               _ExamCatalogCard(
